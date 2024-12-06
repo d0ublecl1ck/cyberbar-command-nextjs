@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, Users, Monitor, CreditCard, LogOut } from 'lucide-react'
+import { Home, Users, Monitor, CreditCard, LogOut, Layout, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -14,7 +14,9 @@ export function TopNav() {
     { href: '/admin', icon: Home, label: '首页' },
     { href: '/admin/user_list', icon: Users, label: '用户管理' },
     { href: '/admin/computer/online', icon: Monitor, label: '机器管理' },
+    { href: '/admin/computer-zones', icon: Layout, label: '区域管理' },
     { href: '/admin/recharge', icon: CreditCard, label: '用户充值' },
+    { href: '/admin/logs', icon: FileText, label: '日志' },
   ]
 
   const handleLogout = () => {
