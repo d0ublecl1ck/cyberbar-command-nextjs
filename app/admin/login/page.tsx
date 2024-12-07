@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,29 +10,79 @@ import { toast } from '@/components/ui/use-toast'
 export default function AdminLoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [errorMessage, setErrorMessage] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const router = useRouter()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // 确保组件只在客户端渲染
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // 如果组件未挂载，返回null或加载占位符
+  if (!mounted) {
+    return null // 或者返回一个加载指示器
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setErrorMessage('') // Clear previous error messages
     
     if (!username.trim()) {
-      setErrorMessage('请输入用户名')
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: "请输入用户名"
+      })
       return
     }
     
     if (!password.trim()) {
-      setErrorMessage('请输入密码')
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: "请输入密码"
+      })
       return
     }
+
+    setIsLoading(true)
     
-    // In a real application, you would validate credentials against a backend
-    if (username === 'admin' && password === 'password') {
-      localStorage.setItem('adminAuthenticated', 'true')
-      router.push('/admin')
-    } else {
-      setErrorMessage('用户名或密码错误')
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+      const response = await fetch(`${API_URL}/api/admin/login?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        mode: 'cors',
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        localStorage.setItem('adminAuthenticated', 'true')
+        toast({
+          title: "成功",
+          description: "登录成功"
+        })
+        router.push('/admin')
+      } else {
+        toast({
+          variant: "destructive",
+          title: "错误",
+          description: data.message || "登录失败，请稍后重试"
+        })
+      }
+    } catch (error) {
+      console.error('Login error:', error)
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: "网络错误，请检查网络连接"
+      })
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -51,6 +101,7 @@ export default function AdminLoginPage() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                disabled={isLoading}
                 required
               />
             </div>
@@ -61,15 +112,17 @@ export default function AdminLoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoading}
                 required
               />
             </div>
-            {errorMessage && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                <span className="block sm:inline">{errorMessage}</span>
-              </div>
-            )}
-            <Button type="submit" className="w-full">登录</Button>
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={isLoading}
+            >
+              {isLoading ? "登录中..." : "登录"}
+            </Button>
           </form>
         </CardContent>
       </Card>
