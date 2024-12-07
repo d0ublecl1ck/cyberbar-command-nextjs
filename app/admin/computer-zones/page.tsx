@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
+import { Pencil, Save, X } from 'lucide-react'
 
 type Zone = {
   id: string
@@ -24,6 +25,8 @@ const initialZones: Zone[] = [
 export default function ComputerZonesPage() {
   const [zones, setZones] = useState<Zone[]>(initialZones)
   const [newZone, setNewZone] = useState<Omit<Zone, 'id'>>({ name: '', capacity: 0, pricePerHour: 0 })
+  const [editingZone, setEditingZone] = useState<string | null>(null)
+  const [editedZone, setEditedZone] = useState<Zone | null>(null)
 
   const handleAddZone = () => {
     const id = (zones.length + 1).toString()
@@ -35,10 +38,26 @@ export default function ComputerZonesPage() {
     setZones(zones.filter(zone => zone.id !== id))
   }
 
+  const handleEditZone = (zone: Zone) => {
+    setEditingZone(zone.id)
+    setEditedZone(zone)
+  }
+
+  const handleSaveEdit = () => {
+    if (editedZone) {
+      setZones(zones.map(zone => zone.id === editedZone.id ? editedZone : zone))
+      setEditingZone(null)
+      setEditedZone(null)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditingZone(null)
+    setEditedZone(null)
+  }
+
   return (
     <div className="container mx-auto py-8">
-      {/* Removed line: <h1 className="text-2xl font-bold">电脑区域管理</h1> */}
-
       <Card>
         <CardHeader>
           <CardTitle>区域列表</CardTitle>
@@ -56,11 +75,58 @@ export default function ComputerZonesPage() {
             <TableBody>
               {zones.map((zone) => (
                 <TableRow key={zone.id}>
-                  <TableCell>{zone.name}</TableCell>
-                  <TableCell>{zone.capacity}</TableCell>
-                  <TableCell>¥{zone.pricePerHour}</TableCell>
                   <TableCell>
-                    <Button variant="destructive" onClick={() => handleDeleteZone(zone.id)}>删除</Button>
+                    {editingZone === zone.id ? (
+                      <Input
+                        value={editedZone?.name}
+                        onChange={(e) => setEditedZone({ ...editedZone!, name: e.target.value })}
+                      />
+                    ) : (
+                      zone.name
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {editingZone === zone.id ? (
+                      <Input
+                        type="number"
+                        value={editedZone?.capacity}
+                        onChange={(e) => setEditedZone({ ...editedZone!, capacity: parseInt(e.target.value) })}
+                      />
+                    ) : (
+                      zone.capacity
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {editingZone === zone.id ? (
+                      <Input
+                        type="number"
+                        value={editedZone?.pricePerHour}
+                        onChange={(e) => setEditedZone({ ...editedZone!, pricePerHour: parseFloat(e.target.value) })}
+                      />
+                    ) : (
+                      `¥${zone.pricePerHour}`
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {editingZone === zone.id ? (
+                      <>
+                        <Button variant="ghost" size="sm" onClick={handleSaveEdit}>
+                          <Save className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={handleCancelEdit}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button variant="ghost" size="sm" onClick={() => handleEditZone(zone)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleDeleteZone(zone.id)}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -71,7 +137,7 @@ export default function ComputerZonesPage() {
 
       <Dialog>
         <DialogTrigger asChild>
-          <Button>添加新区域</Button>
+          <Button className="mt-4">添加新区域</Button>
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
