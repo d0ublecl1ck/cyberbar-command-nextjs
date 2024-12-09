@@ -1,11 +1,19 @@
 'use client'
 
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { DynamicClock } from '@/components/dynamic-clock'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, Legend, BarChart, Bar } from 'recharts'
 import { ErrorComputerCount } from '@/components/error-computer-count'
+import dynamic from 'next/dynamic'
+import { useAdminAuth } from '@/contexts/admin-auth-context'
+
+// 动态导入 DynamicClock 组件并禁用 SSR
+const DynamicClockComponent = dynamic(() => import('@/components/dynamic-clock').then(mod => mod.DynamicClock), {
+  ssr: false
+})
 
 // Mock data for the income chart
 const mockIncomeData = {
@@ -62,7 +70,21 @@ const mockPeakHoursData = [
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042']
 
 export default function AdminDashboardPage() {
+  const router = useRouter()
+  const { isAuthenticated } = useAdminAuth()
   const [timeRange, setTimeRange] = useState('daily')
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.replace('/admin/login?reason=unauthenticated')
+      return
+    }
+  }, [isAuthenticated, router])
+
+  // 如果未认证，返回 null 避免闪烁
+  if (!isAuthenticated) {
+    return null
+  }
 
   const totalIncome = mockIncomeData[timeRange as keyof typeof mockIncomeData].reduce((sum, item) => sum + item.income, 0)
   const averageIncome = totalIncome / mockIncomeData[timeRange as keyof typeof mockIncomeData].length
@@ -74,7 +96,7 @@ export default function AdminDashboardPage() {
       <h1 className="text-3xl font-bold">管理员仪表板</h1>
       
       <div className="text-center">
-        <DynamicClock />
+        <DynamicClockComponent />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

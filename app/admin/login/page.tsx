@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,17 +25,31 @@ export default function AdminLoginPage() {
   const searchParams = useSearchParams()
   const from = searchParams.get('from') || '/admin'
 
+  useEffect(() => {
+    // 检查URL参数中是否有未认证的提示
+    const reason = searchParams.get('reason')
+    
+    if (reason === 'unauthenticated') {
+      toast({
+        title: "需要登录",
+        description: "您的登录已过期或尚未登录，请重新登录",
+        variant: "destructive",
+      })
+    }
+  }, [searchParams])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    
+
     try {
-      // 使用 URLSearchParams 构建查询字符串
+      // 构建查询参数
       const params = new URLSearchParams({
         username,
         password
       })
 
+      // 直接调用后端 API
       const response = await fetch(`${API_URL}${API_ENDPOINTS.ADMIN_LOGIN}?${params.toString()}`, {
         method: 'POST',
         headers: {
@@ -43,24 +57,21 @@ export default function AdminLoginPage() {
         },
       })
 
-      const data: LoginResponse = await response.json()
+      const data = await response.json()
 
       if (!response.ok) {
         throw new Error(data.message || '登录失败')
       }
 
-      // 保存认证信息
-      document.cookie = `adminAuthenticated=true; path=/; max-age=86400; SameSite=Lax`
-      localStorage.setItem('adminToken', data.token)
-      localStorage.setItem('adminUser', JSON.stringify(data.admin))
+      // 设置 cookie
+      document.cookie = `adminToken=${data.token}; path=/; max-age=86400; SameSite=Lax`
       
       toast({
         title: "登录成功",
         description: "正在跳转到管理页面...",
       })
 
-      // 跳转到原来要访问的页面或管理首页
-      router.push(from)
+      router.replace('/admin')
       
     } catch (error) {
       console.error('Login error:', error)

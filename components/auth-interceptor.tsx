@@ -9,8 +9,12 @@ export function AuthInterceptor({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const checkAuth = () => {
-      const isAuthenticated = localStorage.getItem('adminAuthenticated') === 'true'
-      if (!isAuthenticated && pathname !== '/admin/login') {
+      const cookies = document.cookie.split(';')
+      const hasToken = cookies.some(cookie => 
+        cookie.trim().startsWith('adminToken=')
+      )
+      
+      if (!hasToken && pathname !== '/admin/login') {
         router.push('/admin/login')
       }
     }
