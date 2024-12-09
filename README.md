@@ -34,3 +34,14 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+# 项目设置说明
+
+## 样式配置
+项目使用了全局样式文件 `styles/globals.css`，该文件包含：
+- Tailwind CSS 的基础配置
+- 全局颜色变量设置
+- 响应式深色模式支持
+- 基础样式设置
+
+## 目录结构

@@ -97,7 +97,7 @@ export default function OnlineComputersPage() {
     <div className="space-y-6">
       {/* Removed h1 tag */}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader>
             <CardTitle>总电脑数</CardTitle>
@@ -120,6 +120,14 @@ export default function OnlineComputersPage() {
           </CardHeader>
           <CardContent>
             <p className="text-4xl font-bold">{filteredComputers.filter(c => c.status === 'available').length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>维护中</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-4xl font-bold">{filteredComputers.filter(c => c.status === 'maintenance').length}</p>
           </CardContent>
         </Card>
       </div>

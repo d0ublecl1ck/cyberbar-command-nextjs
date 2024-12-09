@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from '@/components/ui/use-toast'
 
 export default function NewUserPage() {
@@ -15,17 +14,12 @@ export default function NewUserPage() {
     name: '',
     idCard: '',
     phone: '',
-    balance: 0,
-    status: '离线'
+    balance: 0
   })
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setUser(prev => ({ ...prev, [name]: value }))
-  }
-
-  const handleStatusChange = (value: string) => {
-    setUser(prev => ({ ...prev, status: value }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -98,20 +92,6 @@ export default function NewUserPage() {
                     onChange={handleInputChange}
                     required
                   />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="status">状态</Label>
-                  <Select value={user.status} onValueChange={handleStatusChange}>
-                    <SelectTrigger id="status">
-                      <SelectValue placeholder="选择状态" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="在线">在线</SelectItem>
-                      <SelectItem value="离线">离线</SelectItem>
-                      <SelectItem value="封禁">封禁</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
 

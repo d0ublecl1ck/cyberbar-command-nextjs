@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { addDays, startOfDay, endOfDay, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
+import { Search, X, RefreshCw, Loader2 } from 'lucide-react'
 
 type LogEntry = {
   id: string
@@ -41,36 +42,96 @@ const mockUserLogs: UserLogEntry[] = [
   { id: '5', timestamp: '2023-06-03 16:30:00', userId: 'user4', action: 'Profile Update', details: 'User updated profile information' },
 ]
 
+const getQuickDateRange = (option: string) => {
+  const now = new Date()
+  switch (option) {
+    case 'today':
+      return { from: startOfDay(now), to: endOfDay(now) }
+    case '3days':
+      return { from: startOfDay(subDays(now, 2)), to: endOfDay(now) }
+    case 'week':
+      return { from: startOfDay(subDays(now, 6)), to: endOfDay(now) }
+    case 'month':
+      return { from: startOfDay(subDays(now, 29)), to: endOfDay(now) }
+    case 'thisWeek':
+      return { from: startOfWeek(now), to: endOfWeek(now) }
+    case 'thisMonth':
+      return { from: startOfMonth(now), to: endOfMonth(now) }
+    default:
+      return { from: now, to: now }
+  }
+}
+
+const fetchLogs = async (type: 'admin' | 'user', from: Date, to: Date) => {
+  // In a real application, this would be an API call
+  console.log(`Fetching ${type} logs from ${from.toISOString()} to ${to.toISOString()}`)
+  // For now, we'll just return the mock data
+  return type === 'admin' ? mockAdminLogs : mockUserLogs
+}
+
 export default function LogsPage() {
   const [adminLogs, setAdminLogs] = useState<AdminLogEntry[]>(mockAdminLogs)
   const [userLogs, setUserLogs] = useState<UserLogEntry[]>(mockUserLogs)
-  const [filterAdmin, setFilterAdmin] = useState<string>('all')
-  const [filterUser, setFilterUser] = useState<string>('all')
-  const [filterAdminAction, setFilterAdminAction] = useState<string>('all')
-  const [filterUserAction, setFilterUserAction] = useState<string>('all')
-  const [searchAdminTerm, setSearchAdminTerm] = useState<string>('')
-  const [searchUserTerm, setSearchUserTerm] = useState<string>('')
-
-  const uniqueAdmins = Array.from(new Set(mockAdminLogs.map(log => log.adminId)))
-  const uniqueUsers = Array.from(new Set(mockUserLogs.map(log => log.userId)))
-  const uniqueAdminActions = Array.from(new Set(mockAdminLogs.map(log => log.action)))
-  const uniqueUserActions = Array.from(new Set(mockUserLogs.map(log => log.action)))
+  const [searchAdminTerm, setSearchAdminTerm] = useState('')
+  const [isAdminSearching, setIsAdminSearching] = useState(false)
+  const [adminDateRange, setAdminDateRange] = useState({ from: subDays(new Date(), 7), to: new Date() })
+  const [searchUserTerm, setSearchUserTerm] = useState('')
+  const [isUserSearching, setIsUserSearching] = useState(false)
+  const [userDateRange, setUserDateRange] = useState({ from: subDays(new Date(), 7), to: new Date() })
+  const [isAdminLoading, setIsAdminLoading] = useState(false)
+  const [isUserLoading, setIsUserLoading] = useState(false)
 
   const filteredAdminLogs = adminLogs.filter(log => 
-    (filterAdmin === 'all' || log.adminId === filterAdmin) &&
-    (filterAdminAction === 'all' || log.action === filterAdminAction) &&
-    (log.details.toLowerCase().includes(searchAdminTerm.toLowerCase()) ||
+    (!isAdminSearching || log.details.toLowerCase().includes(searchAdminTerm.toLowerCase()) ||
      log.action.toLowerCase().includes(searchAdminTerm.toLowerCase()) ||
-     log.adminId.toLowerCase().includes(searchAdminTerm.toLowerCase()))
+     log.adminId.toLowerCase().includes(searchAdminTerm.toLowerCase())) &&
+    (new Date(log.timestamp) >= adminDateRange.from && new Date(log.timestamp) <= adminDateRange.to)
   )
 
   const filteredUserLogs = userLogs.filter(log => 
-    (filterUser === 'all' || log.userId === filterUser) &&
-    (filterUserAction === 'all' || log.action === filterUserAction) &&
-    (log.details.toLowerCase().includes(searchUserTerm.toLowerCase()) ||
+    (!isUserSearching || log.details.toLowerCase().includes(searchUserTerm.toLowerCase()) ||
      log.action.toLowerCase().includes(searchUserTerm.toLowerCase()) ||
-     log.userId.toLowerCase().includes(searchUserTerm.toLowerCase()))
+     log.userId.toLowerCase().includes(searchUserTerm.toLowerCase())) &&
+    (new Date(log.timestamp) >= userDateRange.from && new Date(log.timestamp) <= userDateRange.to)
   )
+
+  const handleAdminSearch = () => {
+    setIsAdminSearching(true)
+  }
+
+  const clearAdminSearch = () => {
+    setSearchAdminTerm('')
+    setIsAdminSearching(false)
+  }
+
+  const handleUserSearch = () => {
+    setIsUserSearching(true)
+  }
+
+  const clearUserSearch = () => {
+    setSearchUserTerm('')
+    setIsUserSearching(false)
+  }
+
+  useEffect(() => {
+    const fetchAdminLogs = async () => {
+      setIsAdminLoading(true)
+      const logs = await fetchLogs('admin', adminDateRange.from, adminDateRange.to)
+      setAdminLogs(logs)
+      setIsAdminLoading(false)
+    }
+    fetchAdminLogs()
+  }, [adminDateRange])
+
+  useEffect(() => {
+    const fetchUserLogs = async () => {
+      setIsUserLoading(true)
+      const logs = await fetchLogs('user', userDateRange.from, userDateRange.to)
+      setUserLogs(logs)
+      setIsUserLoading(false)
+    }
+    fetchUserLogs()
+  }, [userDateRange])
 
   return (
     <div className="container mx-auto py-8">
@@ -85,35 +146,53 @@ export default function LogsPage() {
               <CardTitle>管理员操作日志</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex space-x-4 mb-4">
-                <Select value={filterAdmin} onValueChange={setFilterAdmin}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="选择管理员" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">所有管理员</SelectItem>
-                    {uniqueAdmins.map(admin => (
-                      <SelectItem key={admin} value={admin}>{admin}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={filterAdminAction} onValueChange={setFilterAdminAction}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="选择操作类型" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">所有操作</SelectItem>
-                    {uniqueAdminActions.map(action => (
-                      <SelectItem key={action} value={action}>{action}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input
-                  placeholder="搜索管理员日志..."
-                  value={searchAdminTerm}
-                  onChange={(e) => setSearchAdminTerm(e.target.value)}
-                  className="w-[300px]"
-                />
+              <div className="flex flex-col space-y-4 mb-4">
+                <div className="flex space-x-2">
+                  <Button onClick={() => setAdminDateRange(getQuickDateRange('today'))}>今日</Button>
+                  <Button onClick={() => setAdminDateRange(getQuickDateRange('3days'))}>三天内</Button>
+                  <Button onClick={() => setAdminDateRange(getQuickDateRange('week'))}>一周内</Button>
+                  <Button onClick={() => setAdminDateRange(getQuickDateRange('month'))}>一个月内</Button>
+                  <Button onClick={() => setAdminDateRange(getQuickDateRange('thisWeek'))}>本周</Button>
+                  <Button onClick={() => setAdminDateRange(getQuickDateRange('thisMonth'))}>本月</Button>
+                  <Button onClick={async () => {
+                    setIsAdminLoading(true)
+                    const logs = await fetchLogs('admin', adminDateRange.from, adminDateRange.to)
+                    setAdminLogs(logs)
+                    setIsAdminLoading(false)
+                  }}>
+                    {isAdminLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <div className="flex space-x-2">
+                  <Input
+                    type="date"
+                    value={adminDateRange.from.toISOString().split('T')[0]}
+                    onChange={(e) => setAdminDateRange(prev => ({ ...prev, from: new Date(e.target.value) }))}
+                  />
+                  <Input
+                    type="date"
+                    value={adminDateRange.to.toISOString().split('T')[0]}
+                    onChange={(e) => setAdminDateRange(prev => ({ ...prev, to: new Date(e.target.value) }))}
+                  />
+                </div>
+                <div className="flex space-x-2">
+                  <Input
+                    placeholder="搜索管理员日志..."
+                    value={searchAdminTerm}
+                    onChange={(e) => setSearchAdminTerm(e.target.value)}
+                    className="flex-grow"
+                  />
+                  {searchAdminTerm && (
+                    <>
+                      <Button onClick={handleAdminSearch}>
+                        <Search className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" onClick={clearAdminSearch}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
               <Table>
                 <TableHeader>
@@ -144,35 +223,53 @@ export default function LogsPage() {
               <CardTitle>用户操作日志</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex space-x-4 mb-4">
-                <Select value={filterUser} onValueChange={setFilterUser}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="选择用户" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">所有用户</SelectItem>
-                    {uniqueUsers.map(user => (
-                      <SelectItem key={user} value={user}>{user}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={filterUserAction} onValueChange={setFilterUserAction}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="选择操作类型" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">所有操作</SelectItem>
-                    {uniqueUserActions.map(action => (
-                      <SelectItem key={action} value={action}>{action}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input
-                  placeholder="搜索用户日志..."
-                  value={searchUserTerm}
-                  onChange={(e) => setSearchUserTerm(e.target.value)}
-                  className="w-[300px]"
-                />
+              <div className="flex flex-col space-y-4 mb-4">
+                <div className="flex space-x-2">
+                  <Button onClick={() => setUserDateRange(getQuickDateRange('today'))}>今日</Button>
+                  <Button onClick={() => setUserDateRange(getQuickDateRange('3days'))}>三天内</Button>
+                  <Button onClick={() => setUserDateRange(getQuickDateRange('week'))}>一周内</Button>
+                  <Button onClick={() => setUserDateRange(getQuickDateRange('month'))}>一个月内</Button>
+                  <Button onClick={() => setUserDateRange(getQuickDateRange('thisWeek'))}>本周</Button>
+                  <Button onClick={() => setUserDateRange(getQuickDateRange('thisMonth'))}>本月</Button>
+                  <Button onClick={async () => {
+                    setIsUserLoading(true)
+                    const logs = await fetchLogs('user', userDateRange.from, userDateRange.to)
+                    setUserLogs(logs)
+                    setIsUserLoading(false)
+                  }}>
+                    {isUserLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <div className="flex space-x-2">
+                  <Input
+                    type="date"
+                    value={userDateRange.from.toISOString().split('T')[0]}
+                    onChange={(e) => setUserDateRange(prev => ({ ...prev, from: new Date(e.target.value) }))}
+                  />
+                  <Input
+                    type="date"
+                    value={userDateRange.to.toISOString().split('T')[0]}
+                    onChange={(e) => setUserDateRange(prev => ({ ...prev, to: new Date(e.target.value) }))}
+                  />
+                </div>
+                <div className="flex space-x-2">
+                  <Input
+                    placeholder="搜索用户日志..."
+                    value={searchUserTerm}
+                    onChange={(e) => setSearchUserTerm(e.target.value)}
+                    className="flex-grow"
+                  />
+                  {searchUserTerm && (
+                    <>
+                      <Button onClick={handleUserSearch}>
+                        <Search className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" onClick={clearUserSearch}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
               <Table>
                 <TableHeader>

@@ -1,28 +1,36 @@
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const username = searchParams.get('username')
-  const password = searchParams.get('password')
-  
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-  
   try {
-    const response = await fetch(`${API_URL}/api/admin/login?username=${username}&password=${password}`, {
+    const body = await request.json()
+    const { username, password } = body
+    
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+    
+    const response = await fetch(`${API_URL}/api/admin/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify({ username, password }),
     })
     
     const data = await response.json()
     
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: data.error || '登录失败' },
+        { status: response.status }
+      )
+    }
+    
     return NextResponse.json(data, {
-      status: response.status,
+      status: 200,
     })
   } catch (error) {
+    console.error('Login error:', error)
     return NextResponse.json(
-      { error: 'Internal Server Error' },
+      { error: '服务器内部错误' },
       { status: 500 }
     )
   }

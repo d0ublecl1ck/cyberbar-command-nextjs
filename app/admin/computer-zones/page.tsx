@@ -5,37 +5,52 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { Pencil, Save, X } from 'lucide-react'
+import { Pencil, Save, Trash2, X } from 'lucide-react'
+import { toast } from '@/components/ui/use-toast'
 
 type Zone = {
   id: string
   name: string
-  capacity: number
-  pricePerHour: number
 }
 
 const initialZones: Zone[] = [
-  { id: '1', name: '一楼-A区', capacity: 20, pricePerHour: 5 },
-  { id: '2', name: '一楼-B区', capacity: 15, pricePerHour: 6 },
-  { id: '3', name: '二楼-C区', capacity: 25, pricePerHour: 7 },
+  { id: '1', name: '一楼-A区' },
+  { id: '2', name: '一楼-B区' },
+  { id: '3', name: '二楼-C区' },
 ]
 
 export default function ComputerZonesPage() {
   const [zones, setZones] = useState<Zone[]>(initialZones)
-  const [newZone, setNewZone] = useState<Omit<Zone, 'id'>>({ name: '', capacity: 0, pricePerHour: 0 })
+  const [newZone, setNewZone] = useState<Omit<Zone, 'id'>>({ name: '' })
   const [editingZone, setEditingZone] = useState<string | null>(null)
   const [editedZone, setEditedZone] = useState<Zone | null>(null)
+  const [deleteConfirmZone, setDeleteConfirmZone] = useState<Zone | null>(null)
 
   const handleAddZone = () => {
     const id = (zones.length + 1).toString()
     setZones([...zones, { ...newZone, id }])
-    setNewZone({ name: '', capacity: 0, pricePerHour: 0 })
+    setNewZone({ name: '' })
+    toast({
+      title: "分区添加成功",
+      description: `新分区 "${newZone.name}" 已成功添加。`,
+    })
   }
 
-  const handleDeleteZone = (id: string) => {
-    setZones(zones.filter(zone => zone.id !== id))
+  const handleDeleteZone = (zone: Zone) => {
+    setDeleteConfirmZone(zone)
+  }
+
+  const confirmDeleteZone = () => {
+    if (deleteConfirmZone) {
+      setZones(zones.filter(zone => zone.id !== deleteConfirmZone.id))
+      setDeleteConfirmZone(null)
+      toast({
+        title: "分区删除成功",
+        description: `分区 "${deleteConfirmZone.name}" 已成功删除。`,
+      })
+    }
   }
 
   const handleEditZone = (zone: Zone) => {
@@ -48,6 +63,10 @@ export default function ComputerZonesPage() {
       setZones(zones.map(zone => zone.id === editedZone.id ? editedZone : zone))
       setEditingZone(null)
       setEditedZone(null)
+      toast({
+        title: "分区更新成功",
+        description: `分区 "${editedZone.name}" 已成功更新。`,
+      })
     }
   }
 
@@ -60,73 +79,39 @@ export default function ComputerZonesPage() {
     <div className="container mx-auto py-8">
       <Card>
         <CardHeader>
-          <CardTitle>区域列表</CardTitle>
+          <CardTitle>分区列表</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>区域名称</TableHead>
-                <TableHead>容量</TableHead>
-                <TableHead>每小时价格</TableHead>
-                <TableHead>操作</TableHead>
+                <TableHead>分区名称</TableHead>
+                <TableHead>删除</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {zones.map((zone) => (
                 <TableRow key={zone.id}>
                   <TableCell>
-                    {editingZone === zone.id ? (
-                      <Input
-                        value={editedZone?.name}
-                        onChange={(e) => setEditedZone({ ...editedZone!, name: e.target.value })}
-                      />
-                    ) : (
-                      zone.name
-                    )}
+                    <div className="flex items-center justify-between">
+                      {editingZone === zone.id ? (
+                        <Input
+                          value={editedZone?.name}
+                          onChange={(e) => setEditedZone({ ...editedZone!, name: e.target.value })}
+                          className="w-full mr-2"
+                        />
+                      ) : (
+                        <span>{zone.name}</span>
+                      )}
+                      <Button variant="ghost" size="sm" onClick={() => handleEditZone(zone)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                   <TableCell>
-                    {editingZone === zone.id ? (
-                      <Input
-                        type="number"
-                        value={editedZone?.capacity}
-                        onChange={(e) => setEditedZone({ ...editedZone!, capacity: parseInt(e.target.value) })}
-                      />
-                    ) : (
-                      zone.capacity
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {editingZone === zone.id ? (
-                      <Input
-                        type="number"
-                        value={editedZone?.pricePerHour}
-                        onChange={(e) => setEditedZone({ ...editedZone!, pricePerHour: parseFloat(e.target.value) })}
-                      />
-                    ) : (
-                      `¥${zone.pricePerHour}`
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {editingZone === zone.id ? (
-                      <>
-                        <Button variant="ghost" size="sm" onClick={handleSaveEdit}>
-                          <Save className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={handleCancelEdit}>
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <Button variant="ghost" size="sm" onClick={() => handleEditZone(zone)}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDeleteZone(zone.id)}>
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </>
-                    )}
+                    <Button variant="ghost" size="sm" onClick={() => handleDeleteZone(zone)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -137,50 +122,41 @@ export default function ComputerZonesPage() {
 
       <Dialog>
         <DialogTrigger asChild>
-          <Button className="mt-4">添加新区域</Button>
+          <Button className="mt-4">添加新分区</Button>
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>添加新区域</DialogTitle>
+            <DialogTitle>添加新分区</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">
-                区域名称
+                分区名称
               </Label>
               <Input
                 id="name"
                 value={newZone.name}
-                onChange={(e) => setNewZone({ ...newZone, name: e.target.value })}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="capacity" className="text-right">
-                容量
-              </Label>
-              <Input
-                id="capacity"
-                type="number"
-                value={newZone.capacity}
-                onChange={(e) => setNewZone({ ...newZone, capacity: parseInt(e.target.value) })}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="price" className="text-right">
-                每小时价格
-              </Label>
-              <Input
-                id="price"
-                type="number"
-                value={newZone.pricePerHour}
-                onChange={(e) => setNewZone({ ...newZone, pricePerHour: parseFloat(e.target.value) })}
+                onChange={(e) => setNewZone({ name: e.target.value })}
                 className="col-span-3"
               />
             </div>
           </div>
-          <Button onClick={handleAddZone}>添加</Button>
+          <DialogFooter>
+            <Button onClick={handleAddZone}>添加</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!deleteConfirmZone} onOpenChange={() => setDeleteConfirmZone(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>确认删除</DialogTitle>
+          </DialogHeader>
+          <p>您确定要删除分区 "{deleteConfirmZone?.name}" 吗？此操作不可撤销。</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirmZone(null)}>取消</Button>
+            <Button variant="destructive" onClick={confirmDeleteZone}>确认删除</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

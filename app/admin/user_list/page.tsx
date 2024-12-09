@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Search, RefreshCw, UserPlus } from 'lucide-react'
+import { Search, RefreshCw, UserPlus, ArrowUp } from 'lucide-react'
 
 // Generate 200 mock users
 const generateMockUsers = (count: number) => {
@@ -33,8 +33,9 @@ export default function UserListPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [minBalance, setMinBalance] = useState('')
   const [maxBalance, setMaxBalance] = useState('')
-  const [filtersApplied, setFiltersApplied] = useState(false) // Added state variable
-  const usersPerPage = 50
+  const [filtersApplied, setFiltersApplied] = useState(false)
+  const [usersPerPage, setUsersPerPage] = useState(20)
+  const [showBackToTop, setShowBackToTop] = useState(false)
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -64,7 +65,7 @@ export default function UserListPage() {
       minBalance !== '' || 
       maxBalance !== '' || 
       searchTerm !== ''
-    ) // Updated to set filtersApplied
+    )
   }
 
   const resetFilters = () => {
@@ -74,12 +75,21 @@ export default function UserListPage() {
     setMaxBalance('')
     setFilteredUsers(users)
     setCurrentPage(1)
-    setFiltersApplied(false) // Updated to set filtersApplied to false
+    setFiltersApplied(false)
   }
 
   useEffect(() => {
     applyFilters()
   }, [users, statusFilter, minBalance, maxBalance])
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 300)
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
@@ -101,9 +111,12 @@ export default function UserListPage() {
     }
   }
 
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   return (
     <div className="space-y-6">
-
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader>
@@ -176,7 +189,7 @@ export default function UserListPage() {
               <Search className="mr-2 h-4 w-4" />
               搜索
             </Button>
-            {filtersApplied && ( // Conditional rendering of the "取消筛选" button
+            {filtersApplied && (
               <Button type="button" variant="outline" onClick={resetFilters}>
                 取消筛选
               </Button>
@@ -194,6 +207,28 @@ export default function UserListPage() {
           <CardTitle>用户列表</CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="flex justify-between items-center mb-4">
+            <Select
+              value={usersPerPage.toString()}
+              onValueChange={(value) => setUsersPerPage(Number(value))}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="每页显示数量" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10条/页</SelectItem>
+                <SelectItem value="20">20条/页</SelectItem>
+                <SelectItem value="30">30条/页</SelectItem>
+                <SelectItem value="50">50条/页</SelectItem>
+              </SelectContent>
+            </Select>
+            <Link href="/admin/user/new">
+              <Button>
+                <UserPlus className="mr-2 h-4 w-4" />
+                添加新用户
+              </Button>
+            </Link>
+          </div>
           <Table>
             <TableHeader>
               <TableRow>
@@ -243,6 +278,16 @@ export default function UserListPage() {
           </div>
         </CardContent>
       </Card>
+
+      {showBackToTop && (
+        <Button
+          className="fixed bottom-4 right-4 rounded-full p-2"
+          onClick={scrollToTop}
+          size="icon"
+        >
+          <ArrowUp className="h-4 w-4" />
+        </Button>
+      )}
     </div>
   )
 }

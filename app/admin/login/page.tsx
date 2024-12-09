@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -11,75 +11,45 @@ export default function AdminLoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [mounted, setMounted] = useState(false)
   const router = useRouter()
-
-  // 确保组件只在客户端渲染
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  // 如果组件未挂载，返回null或加载占位符
-  if (!mounted) {
-    return null // 或者返回一个加载指示器
-  }
+  const searchParams = useSearchParams()
+  const from = searchParams.get('from') || '/admin'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!username.trim()) {
-      toast({
-        variant: "destructive",
-        title: "错误",
-        description: "请输入用户名"
-      })
-      return
-    }
-    
-    if (!password.trim()) {
-      toast({
-        variant: "destructive",
-        title: "错误",
-        description: "请输入密码"
-      })
-      return
-    }
-
     setIsLoading(true)
     
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-      const response = await fetch(`${API_URL}/api/admin/login?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`, {
+      const response = await fetch('/api/admin/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
         },
-        mode: 'cors',
+        body: JSON.stringify({ username, password }),
       })
 
       const data = await response.json()
 
-      if (response.ok) {
-        localStorage.setItem('adminAuthenticated', 'true')
-        toast({
-          title: "成功",
-          description: "登录成功"
-        })
-        router.push('/admin')
-      } else {
-        toast({
-          variant: "destructive",
-          title: "错误",
-          description: data.message || "登录失败，请稍后重试"
-        })
+      if (!response.ok) {
+        throw new Error(data.error || '登录失败')
       }
-    } catch (error) {
-      console.error('Login error:', error)
+
+      // 保存认证信息
+      localStorage.setItem('adminToken', data.token)
+      localStorage.setItem('adminUser', JSON.stringify(data.user))
+      
       toast({
+        title: "登录成功",
+        description: "正在跳转到管理页面...",
+      })
+
+      // 跳转到来源页面或默认管理页面
+      router.push(from)
+    } catch (error) {
+      toast({
+        title: "登录失败",
+        description: error instanceof Error ? error.message : "请检查用户名和密码",
         variant: "destructive",
-        title: "错误",
-        description: "网络错误，请检查网络连接"
       })
     } finally {
       setIsLoading(false)
@@ -121,7 +91,7 @@ export default function AdminLoginPage() {
               className="w-full"
               disabled={isLoading}
             >
-              {isLoading ? "登录中..." : "登录"}
+              {isLoading ? '登录中...' : '登录'}
             </Button>
           </form>
         </CardContent>
