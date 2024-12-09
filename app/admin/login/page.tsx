@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/components/ui/use-toast'
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+
 export default function AdminLoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -20,32 +22,56 @@ export default function AdminLoginPage() {
     setIsLoading(true)
     
     try {
-      const response = await fetch('/api/admin/login', {
+      // 使用 URLSearchParams 构建查询字符串
+      const params = new URLSearchParams({
+        username,
+        password
+      })
+
+      console.log('Sending login request to:', `${API_URL}/api/admin/login?${params.toString()}`)
+
+      const response = await fetch(`${API_URL}/api/admin/login?${params.toString()}`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: JSON.stringify({ username, password }),
       })
 
       const data = await response.json()
+      console.log('Login response data:', JSON.stringify(data, null, 2))
 
       if (!response.ok) {
-        throw new Error(data.error || '登录失败')
+        throw new Error(data.message || data.error || '登录失败')
+      }
+
+      // 检查后端返回的数据结构
+      if (!data.data?.token) {
+        console.error('Invalid response format:', data)
+        throw new Error('登录成功但未收到正确的认证信息')
       }
 
       // 保存认证信息
-      localStorage.setItem('adminToken', data.token)
-      localStorage.setItem('adminUser', JSON.stringify(data.user))
+      localStorage.setItem('adminToken', data.data.token)
+      if (data.data.user) {
+        localStorage.setItem('adminUser', JSON.stringify(data.data.user))
+      }
       
       toast({
         title: "登录成功",
         description: "正在跳转到管理页面...",
       })
 
-      // 跳转到来源页面或默认管理页面
-      router.push(from)
+      console.log('Redirecting to:', from)
+      
+      // 确保在状态更新后再跳转
+      setTimeout(() => {
+        router.push(from)
+        // 强制刷新以确保重新获取页面状态
+        router.refresh()
+      }, 100)
+
     } catch (error) {
+      console.error('Login error:', error)
       toast({
         title: "登录失败",
         description: error instanceof Error ? error.message : "请检查用户名和密码",
