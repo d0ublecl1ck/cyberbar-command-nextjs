@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { API_URL, API_ENDPOINTS } from '@/lib/api-config'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -13,67 +14,146 @@ import { toast } from '@/components/ui/use-toast'
 type Zone = {
   id: string
   name: string
+  capacity: number
+  pricePerHour: number
 }
 
-const initialZones: Zone[] = [
-  { id: '1', name: '一楼-A区' },
-  { id: '2', name: '一楼-B区' },
-  { id: '3', name: '二楼-C区' },
-]
-
 export default function ComputerZonesPage() {
-  const [zones, setZones] = useState<Zone[]>(initialZones)
-  const [newZone, setNewZone] = useState<Omit<Zone, 'id'>>({ name: '' })
-  const [editingZone, setEditingZone] = useState<string | null>(null)
-  const [editedZone, setEditedZone] = useState<Zone | null>(null)
-  const [deleteConfirmZone, setDeleteConfirmZone] = useState<Zone | null>(null)
+  const [zones, setZones] = useState<Zone[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [newZone, setNewZone] = useState<Omit<Zone, 'id'>>({
+    name: '',
+    capacity: 0,
+    pricePerHour: 0
+  })
 
-  const handleAddZone = () => {
-    const id = (zones.length + 1).toString()
-    setZones([...zones, { ...newZone, id }])
-    setNewZone({ name: '' })
-    toast({
-      title: "分区添加成功",
-      description: `新分区 "${newZone.name}" 已成功添加。`,
-    })
-  }
-
-  const handleDeleteZone = (zone: Zone) => {
-    setDeleteConfirmZone(zone)
-  }
-
-  const confirmDeleteZone = () => {
-    if (deleteConfirmZone) {
-      setZones(zones.filter(zone => zone.id !== deleteConfirmZone.id))
-      setDeleteConfirmZone(null)
+  // 获取所有区域
+  const fetchZones = async () => {
+    try {
+      const response = await fetch(`${API_URL}${API_ENDPOINTS.ZONES}`)
+      if (!response.ok) throw new Error('获取区域列表失败')
+      const data = await response.json()
+      setZones(data.data || [])
+    } catch (error) {
       toast({
-        title: "分区删除成功",
-        description: `分区 "${deleteConfirmZone.name}" 已成功删除。`,
+        variant: "destructive",
+        title: "错误",
+        description: error instanceof Error ? error.message : "获取区域列表失败"
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // 检查区域名称是否存在
+  const checkZoneName = async (name: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`${API_URL}${API_ENDPOINTS.ZONE_CHECK(name)}`)
+      if (!response.ok) throw new Error('检查区域名称失败')
+      const data = await response.json()
+      return data.exists
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: "检查区域名称失败"
+      })
+      return true // 发生错误时返回 true 以阻止操作
+    }
+  }
+
+  // 添加新区域
+  const handleAddZone = async () => {
+    try {
+      // 首先检查名称是否已存在
+      const nameExists = await checkZoneName(newZone.name)
+      if (nameExists) {
+        toast({
+          variant: "destructive",
+          title: "错误",
+          description: "该区域名称已存在"
+        })
+        return
+      }
+
+      const response = await fetch(`${API_URL}${API_ENDPOINTS.ZONES}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newZone)
+      })
+
+      if (!response.ok) throw new Error('添加区域失败')
+      
+      await fetchZones()
+      setNewZone({ name: '', capacity: 0, pricePerHour: 0 })
+      toast({
+        title: "成功",
+        description: "区域添加成功"
+      })
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: error instanceof Error ? error.message : "添加区域失败"
       })
     }
   }
 
-  const handleEditZone = (zone: Zone) => {
-    setEditingZone(zone.id)
-    setEditedZone(zone)
-  }
+  // 删除区域
+  const handleDeleteZone = async (id: string) => {
+    try {
+      const response = await fetch(`${API_URL}${API_ENDPOINTS.ZONE_BY_ID(id)}`, {
+        method: 'DELETE'
+      })
 
-  const handleSaveEdit = () => {
-    if (editedZone) {
-      setZones(zones.map(zone => zone.id === editedZone.id ? editedZone : zone))
-      setEditingZone(null)
-      setEditedZone(null)
+      if (!response.ok) throw new Error('删除区域失败')
+      
+      await fetchZones()
       toast({
-        title: "分区更新成功",
-        description: `分区 "${editedZone.name}" 已成功更新。`,
+        title: "成功",
+        description: "区域删除成功"
+      })
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: error instanceof Error ? error.message : "删除区域失败"
       })
     }
   }
 
-  const handleCancelEdit = () => {
-    setEditingZone(null)
-    setEditedZone(null)
+  // 更新区域
+  const handleUpdateZone = async (zone: Zone) => {
+    try {
+      const response = await fetch(`${API_URL}${API_ENDPOINTS.ZONE_BY_ID(zone.id)}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(zone)
+      })
+
+      if (!response.ok) throw new Error('更新区域失败')
+      
+      await fetchZones()
+      toast({
+        title: "成功",
+        description: "区域更新成功"
+      })
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: error instanceof Error ? error.message : "更新区域失败"
+      })
+    }
   }
+
+  useEffect(() => {
+    fetchZones()
+  }, [])
 
   return (
     <div className="container mx-auto py-8">
@@ -94,22 +174,14 @@ export default function ComputerZonesPage() {
                 <TableRow key={zone.id}>
                   <TableCell>
                     <div className="flex items-center justify-between">
-                      {editingZone === zone.id ? (
-                        <Input
-                          value={editedZone?.name}
-                          onChange={(e) => setEditedZone({ ...editedZone!, name: e.target.value })}
-                          className="w-full mr-2"
-                        />
-                      ) : (
-                        <span>{zone.name}</span>
-                      )}
-                      <Button variant="ghost" size="sm" onClick={() => handleEditZone(zone)}>
-                        <Pencil className="h-4 w-4" />
+                      <span>{zone.name}</span>
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteZone(zone.id)}>
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="sm" onClick={() => handleDeleteZone(zone)}>
+                    <Button variant="ghost" size="sm" onClick={() => handleDeleteZone(zone.id)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>
@@ -136,26 +208,13 @@ export default function ComputerZonesPage() {
               <Input
                 id="name"
                 value={newZone.name}
-                onChange={(e) => setNewZone({ name: e.target.value })}
+                onChange={(e) => setNewZone({ ...newZone, name: e.target.value })}
                 className="col-span-3"
               />
             </div>
           </div>
           <DialogFooter>
             <Button onClick={handleAddZone}>添加</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!deleteConfirmZone} onOpenChange={() => setDeleteConfirmZone(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>确认删除</DialogTitle>
-          </DialogHeader>
-          <p>您确定要删除分区 "{deleteConfirmZone?.name}" 吗？此操作不可撤销。</p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteConfirmZone(null)}>取消</Button>
-            <Button variant="destructive" onClick={confirmDeleteZone}>确认删除</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

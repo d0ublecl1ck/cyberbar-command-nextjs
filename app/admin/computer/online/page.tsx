@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { API_URL, API_ENDPOINTS } from '@/lib/api-config'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -9,30 +10,70 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { Monitor, Lock, Unlock, RefreshCw } from 'lucide-react'
 
-// Mock data for online computers
-const mockComputers = [
-  { id: 1, location: '一楼-A区', price: 5, status: 'occupied', user: '张三' },
-  { id: 2, location: '一楼-A区', price: 5, status: 'available', user: null },
-  { id: 3, location: '一楼-B区', price: 6, status: 'occupied', user: '李四' },
-  { id: 4, location: '二楼-C区', price: 7, status: 'maintenance', user: null },
-  { id: 5, location: '二楼-C区', price: 7, status: 'available', user: null },
-]
+type Machine = {
+  id: string
+  location: string
+  price: number
+  status: string
+  user: string | null
+}
 
 export default function OnlineComputersPage() {
-  const [computers, setComputers] = useState(mockComputers)
-  const [filteredComputers, setFilteredComputers] = useState(mockComputers)
+  const [machines, setMachines] = useState<Machine[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [filteredMachines, setFilteredMachines] = useState<Machine[]>(machines)
   const [locationFilter, setLocationFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
   const [filtersApplied, setFiltersApplied] = useState(false)
 
-  const handleLockUnlock = (id: number) => {
-    setComputers(computers.map(computer => 
-      computer.id === id 
-        ? { ...computer, status: computer.status === 'available' ? 'maintenance' : 'available' }
-        : computer
-    ))
+  // 获取机器列表
+  const fetchMachines = async () => {
+    try {
+      const response = await fetch(`${API_URL}${API_ENDPOINTS.MACHINES}`)
+      if (!response.ok) throw new Error('获取机器列表失败')
+      const data = await response.json()
+      setMachines(data.data || [])
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: error instanceof Error ? error.message : "获取机器列表失败"
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // 更新机器状态
+  const handleLockUnlock = async (id: string) => {
+    try {
+      const response = await fetch(`${API_URL}${API_ENDPOINTS.MACHINE_STATUS}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          machineId: id,
+          status: 'maintenance' // 或 'available'
+        })
+      })
+
+      if (!response.ok) throw new Error('更新机器状态失败')
+      
+      await fetchMachines()
+      toast({
+        title: "成功",
+        description: "机器状态更新成功"
+      })
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: error instanceof Error ? error.message : "更新机器状态失败"
+      })
+    }
   }
 
   const handleRefresh = () => {
@@ -45,7 +86,7 @@ export default function OnlineComputersPage() {
     setStatusFilter('all')
     setMinPrice('')
     setMaxPrice('')
-    setFilteredComputers(computers)
+    setFilteredMachines(machines)
     setFiltersApplied(false)
   }
 
@@ -67,31 +108,35 @@ export default function OnlineComputersPage() {
     setFiltersApplied(isFiltered);
 
     if (!isFiltered) {
-      setFilteredComputers(computers);
+      setFilteredMachines(machines);
     } else {
-      let filtered = computers;
+      let filtered = machines;
 
       if (locationFilter !== 'all') {
-        filtered = filtered.filter(computer => computer.location === locationFilter);
+        filtered = filtered.filter(machine => machine.location === locationFilter);
       }
 
       if (statusFilter !== 'all') {
-        filtered = filtered.filter(computer => computer.status === statusFilter);
+        filtered = filtered.filter(machine => machine.status === statusFilter);
       }
 
       if (minPrice !== '') {
-        filtered = filtered.filter(computer => computer.price >= Number(minPrice));
+        filtered = filtered.filter(machine => machine.price >= Number(minPrice));
       }
 
       if (maxPrice !== '') {
-        filtered = filtered.filter(computer => computer.price <= Number(maxPrice));
+        filtered = filtered.filter(machine => machine.price <= Number(maxPrice));
       }
 
-      setFilteredComputers(filtered);
+      setFilteredMachines(filtered);
     }
-  }, [computers, locationFilter, statusFilter, minPrice, maxPrice])
+  }, [machines, locationFilter, statusFilter, minPrice, maxPrice])
 
-  const uniqueLocations = Array.from(new Set(computers.map(c => c.location)))
+  const uniqueLocations = Array.from(new Set(machines.map(m => m.location)))
+
+  useEffect(() => {
+    fetchMachines()
+  }, [])
 
   return (
     <div className="space-y-6">
@@ -103,7 +148,7 @@ export default function OnlineComputersPage() {
             <CardTitle>总电脑数</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-4xl font-bold">{filteredComputers.length}</p>
+            <p className="text-4xl font-bold">{filteredMachines.length}</p>
           </CardContent>
         </Card>
         <Card>
@@ -111,7 +156,7 @@ export default function OnlineComputersPage() {
             <CardTitle>使用中</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-4xl font-bold">{filteredComputers.filter(c => c.status === 'occupied').length}</p>
+            <p className="text-4xl font-bold">{filteredMachines.filter(m => m.status === 'occupied').length}</p>
           </CardContent>
         </Card>
         <Card>
@@ -119,7 +164,7 @@ export default function OnlineComputersPage() {
             <CardTitle>空闲</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-4xl font-bold">{filteredComputers.filter(c => c.status === 'available').length}</p>
+            <p className="text-4xl font-bold">{filteredMachines.filter(m => m.status === 'available').length}</p>
           </CardContent>
         </Card>
         <Card>
@@ -127,7 +172,7 @@ export default function OnlineComputersPage() {
             <CardTitle>维护中</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-4xl font-bold">{filteredComputers.filter(c => c.status === 'maintenance').length}</p>
+            <p className="text-4xl font-bold">{filteredMachines.filter(m => m.status === 'maintenance').length}</p>
           </CardContent>
         </Card>
       </div>
@@ -157,7 +202,7 @@ export default function OnlineComputersPage() {
                 <SelectItem value="all">全部状态</SelectItem>
                 <SelectItem value="occupied">使用中</SelectItem>
                 <SelectItem value="available">空闲</SelectItem>
-                <SelectItem value="maintenance">维护中</SelectItem>
+                <SelectItem value="maintenance">���护中</SelectItem>
               </SelectContent>
             </Select>
             <Input
@@ -200,20 +245,20 @@ export default function OnlineComputersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredComputers.map((computer) => (
-                <TableRow key={computer.id}>
-                  <TableCell>{computer.id}</TableCell>
-                  <TableCell>{computer.location}</TableCell>
-                  <TableCell>{computer.price}</TableCell>
-                  <TableCell>{getStatusBadge(computer.status)}</TableCell>
-                  <TableCell>{computer.user || '-'}</TableCell>
+              {filteredMachines.map((machine) => (
+                <TableRow key={machine.id}>
+                  <TableCell>{machine.id}</TableCell>
+                  <TableCell>{machine.location}</TableCell>
+                  <TableCell>{machine.price}</TableCell>
+                  <TableCell>{getStatusBadge(machine.status)}</TableCell>
+                  <TableCell>{machine.user || '-'}</TableCell>
                   <TableCell>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleLockUnlock(computer.id)}
+                      onClick={() => handleLockUnlock(machine.id)}
                     >
-                      {computer.status === 'maintenance' ? (
+                      {machine.status === 'maintenance' ? (
                         <>
                           <Unlock className="mr-2 h-4 w-4" />
                           解锁

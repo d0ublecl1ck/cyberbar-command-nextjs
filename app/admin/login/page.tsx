@@ -6,8 +6,16 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/components/ui/use-toast'
+import { API_URL, API_ENDPOINTS } from '@/lib/api-config'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+interface LoginResponse {
+  message: string
+  token: string
+  admin: {
+    id: number
+    username: string
+  }
+}
 
 export default function AdminLoginPage() {
   const [username, setUsername] = useState('')
@@ -28,48 +36,32 @@ export default function AdminLoginPage() {
         password
       })
 
-      console.log('Sending login request to:', `${API_URL}/api/admin/login?${params.toString()}`)
-
-      const response = await fetch(`${API_URL}/api/admin/login?${params.toString()}`, {
+      const response = await fetch(`${API_URL}${API_ENDPOINTS.ADMIN_LOGIN}?${params.toString()}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
       })
 
-      const data = await response.json()
-      console.log('Login response data:', JSON.stringify(data, null, 2))
+      const data: LoginResponse = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.message || data.error || '登录失败')
-      }
-
-      // 检查后端返回的数据结构
-      if (!data.data?.token) {
-        console.error('Invalid response format:', data)
-        throw new Error('登录成功但未收到正确的认证信息')
+        throw new Error(data.message || '登录失败')
       }
 
       // 保存认证信息
-      localStorage.setItem('adminToken', data.data.token)
-      if (data.data.user) {
-        localStorage.setItem('adminUser', JSON.stringify(data.data.user))
-      }
+      document.cookie = `adminAuthenticated=true; path=/; max-age=86400; SameSite=Lax`
+      localStorage.setItem('adminToken', data.token)
+      localStorage.setItem('adminUser', JSON.stringify(data.admin))
       
       toast({
         title: "登录成功",
         description: "正在跳转到管理页面...",
       })
 
-      console.log('Redirecting to:', from)
+      // 跳转到原来要访问的页面或管理首页
+      router.push(from)
       
-      // 确保在状态更新后再跳转
-      setTimeout(() => {
-        router.push(from)
-        // 强制刷新以确保重新获取页面状态
-        router.refresh()
-      }, 100)
-
     } catch (error) {
       console.error('Login error:', error)
       toast({
@@ -125,4 +117,3 @@ export default function AdminLoginPage() {
     </div>
   )
 }
-

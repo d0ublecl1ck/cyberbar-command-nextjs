@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { API_URL, API_ENDPOINTS } from '@/lib/api-config'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,25 +11,20 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Search, RefreshCw, UserPlus, ArrowUp } from 'lucide-react'
 
-// Generate 200 mock users
-const generateMockUsers = (count: number) => {
-  const statuses = ['离线', '在线', '封禁'];
-  return Array.from({ length: count }, (_, i) => ({
-    userid: (i + 1).toString(),
-    name: `用户${i + 1}`,
-    idCard: `11010119900101${(1000 + i).toString().slice(1)}`,
-    phone: `138${(10000000 + i).toString().slice(1)}`,
-    balance: Math.floor(Math.random() * 1000),
-    status: statuses[Math.floor(Math.random() * statuses.length)]
-  }))
+type User = {
+  id: string
+  name: string
+  idCard: string
+  phone: string
+  balance: number
+  status: string
 }
-
-const mockUsers = generateMockUsers(200)
 
 export default function UserListPage() {
   const [searchTerm, setSearchTerm] = useState('')
-  const [users, setUsers] = useState(mockUsers)
-  const [filteredUsers, setFilteredUsers] = useState(mockUsers)
+  const [users, setUsers] = useState<User[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState('all')
   const [minBalance, setMinBalance] = useState('')
@@ -43,10 +39,7 @@ export default function UserListPage() {
   }
 
   const handleRefresh = () => {
-    // In a real application, this would fetch the latest data from the server
-    console.log('Refreshing user list...')
-    setUsers(generateMockUsers(200))
-    applyFilters()
+    fetchUsers()
   }
 
   const applyFilters = () => {
@@ -79,8 +72,8 @@ export default function UserListPage() {
   }
 
   useEffect(() => {
-    applyFilters()
-  }, [users, statusFilter, minBalance, maxBalance])
+    fetchUsers()
+  }, [])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -113,6 +106,24 @@ export default function UserListPage() {
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  // 获取用户列表
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch(`${API_URL}${API_ENDPOINTS.USERS}`)
+      if (!response.ok) throw new Error('获取用户列表失败')
+      const data = await response.json()
+      setUsers(data.data || [])
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: error instanceof Error ? error.message : "获取用户列表失败"
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -243,8 +254,8 @@ export default function UserListPage() {
             </TableHeader>
             <TableBody>
               {currentUsers.map((user) => (
-                <TableRow key={user.userid}>
-                  <TableCell>{user.userid}</TableCell>
+                <TableRow key={user.id}>
+                  <TableCell>{user.id}</TableCell>
                   <TableCell>{user.name}</TableCell>
                   <TableCell>{user.idCard}</TableCell>
                   <TableCell>{user.phone}</TableCell>
@@ -252,10 +263,10 @@ export default function UserListPage() {
                   <TableCell>{getStatusBadge(user.status)}</TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
-                      <Link href={`/admin/user/${user.userid}`}>
+                      <Link href={`/admin/user/${user.id}`}>
                         <Button variant="outline" size="sm">编辑</Button>
                       </Link>
-                      <Link href={`/admin/user/profile?id=${user.userid}`}>
+                      <Link href={`/admin/user/profile?id=${user.id}`}>
                         <Button variant="outline" size="sm">查看档案</Button>
                       </Link>
                     </div>
