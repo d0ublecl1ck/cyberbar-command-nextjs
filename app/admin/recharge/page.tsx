@@ -6,182 +6,293 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { toast } from '@/components/ui/use-toast'
-import { Loader2, Search } from 'lucide-react'
+import { Loader2, Search, Eye, EyeOff } from 'lucide-react'
+import { API_URL, API_ENDPOINTS } from '@/lib/api-config'
 
-// Mock user data
-const mockUsers = [
-  { id: '1', name: '张三', balance: 100, idCard: '110101199001011234', phone: '13800138000' },
-  { id: '2', name: '李四', balance: 50, idCard: '110101199001011235', phone: '13800138001' },
-  { id: '3', name: '王五', balance: 200, idCard: '110101199001011236', phone: '13800138002' },
-  { id: '4', name: '赵六', balance: 150, idCard: '110101199001011237', phone: '13800138003' },
-  { id: '5', name: '钱七', balance: 80, idCard: '110101199001011238', phone: '13800138004' },
-]
+type User = {
+  id: number
+  name: string
+  balance: number
+  identityCard: string
+  phoneNumber: string
+  status: 'Online' | 'Offline' | 'Banned'
+}
+
+type VisibleInfo = {
+  [key: number]: {
+    identityCard: boolean
+    phoneNumber: boolean
+  }
+}
 
 export default function RechargePage() {
   const [searchTerm, setSearchTerm] = useState('')
-  const [searchResults, setSearchResults] = useState<typeof mockUsers>([])
-  const [selectedUser, setSelectedUser] = useState<(typeof mockUsers)[0] | null>(null)
-  const [amount, setAmount] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [updatedBalance, setUpdatedBalance] = useState<number | null>(null)
+  const [isSearching, setIsSearching] = useState(false)
+  const [users, setUsers] = useState<User[]>([])
+  const [rechargeAmount, setRechargeAmount] = useState<{ [key: number]: string }>({})
+  const [visibleInfo, setVisibleInfo] = useState<VisibleInfo>({})
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    const results = mockUsers.filter(user => 
-      Object.values(user).some(value => 
-        value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    )
-    setSearchResults(results)
-    setSelectedUser(null)
+  // 隐藏身份证号中间12位
+  const maskIdentityCard = (idCard: string) => {
+    return idCard.replace(/^(.{3})(.*)(.{4})$/, '$1************$3')
   }
 
-  const handleSelectUser = (user: (typeof mockUsers)[0]) => {
-    setSelectedUser(user)
-    setSearchResults([])
+  // 隐藏手机号中间4位
+  const maskPhoneNumber = (phone: string) => {
+    return phone.replace(/^(.{3})(.*)(.{4})$/, '$1****$3')
   }
 
-  const handleRecharge = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedUser || !amount) {
+  // 切换信息可见性
+  const toggleVisibility = (userId: number, field: 'identityCard' | 'phoneNumber') => {
+    setVisibleInfo(prev => ({
+      ...prev,
+      [userId]: {
+        ...prev[userId],
+        [field]: !prev[userId]?.[field]
+      }
+    }))
+  }
+
+  // 刷新单个用户信息
+  const refreshUserInfo = async (userId: number) => {
+    try {
+      const response = await fetch(`${API_URL}${API_ENDPOINTS.USERS}/${userId}`)
+      if (!response.ok) throw new Error('获取用户信息失败')
+      const updatedUser = await response.json()
+      
+      setUsers(prev => prev.map(user => 
+        user.id === userId ? updatedUser : user
+      ))
+    } catch (error) {
       toast({
-        title: "错误",
-        description: "请选择用户并输入充值金额",
         variant: "destructive",
+        title: "错误",
+        description: error instanceof Error ? error.message : "刷新用户信息失败"
+      })
+    }
+  }
+
+  // 搜索用户
+  const handleSearch = async () => {
+    if (!searchTerm.trim()) {
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: "请输入搜索关键词"
       })
       return
     }
 
-    setIsLoading(true)
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setIsLoading(false)
+    try {
+      setIsSearching(true)
+      const params = new URLSearchParams({
+        keyword: searchTerm,
+        pageSize: '10',
+        pageNum: '1'
+      })
 
-    const newBalance = selectedUser.balance + parseFloat(amount)
-    setUpdatedBalance(newBalance)
-    toast({
-      title: "充值成功",
-      description: `已为用户 ${selectedUser.name} 充值 ${amount} 元。新余额为 ¥${newBalance.toFixed(2)}。`,
-    })
+      const response = await fetch(`${API_URL}${API_ENDPOINTS.USERS}/search?${params}`)
+      if (!response.ok) throw new Error('搜索用户失败')
+      
+      const data = await response.json()
+      setUsers(data.list || [])
+      // 重置可见性状态
+      setVisibleInfo({})
 
-    // Reset form
-    setSelectedUser(null)
-    setAmount('')
-    setSearchTerm('')
-    setUpdatedBalance(null)
+      if (data.list.length === 0) {
+        toast({
+          title: "提示",
+          description: "未找到匹配的用户"
+        })
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: error instanceof Error ? error.message : "搜索用户失败"
+      })
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  // 处理充值
+  const handleRecharge = async (userId: number) => {
+    const amount = rechargeAmount[userId]
+    if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: "请输入有效的充值金额"
+      })
+      return
+    }
+
+    try {
+      // 首先获取用户当前信息
+      const userResponse = await fetch(`${API_URL}${API_ENDPOINTS.USERS}/${userId}`)
+      if (!userResponse.ok) throw new Error('获取用户信息失败')
+      const userData = await userResponse.json()
+
+      // 更新用户余额
+      const response = await fetch(`${API_URL}${API_ENDPOINTS.USERS}/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...userData,
+          balance: userData.balance + parseFloat(amount)
+        })
+      })
+
+      if (!response.ok) throw new Error('充值失败')
+
+      // 创建充值日志
+      await fetch(`${API_URL}${API_ENDPOINTS.MANAGEMENT_LOGS}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          adminId: 1, // 这里应该使用实际的管理员ID
+          operation: 'Recharge',
+          detail: `为用户 ${userData.name}(ID: ${userId}) 充值 ${amount} 元`,
+          operationTime: new Date().toISOString()
+        })
+      })
+
+      toast({
+        title: "成功",
+        description: `已为用户 ${userData.name} 充值 ${amount} 元`
+      })
+
+      // 清空充值金额输入框
+      setRechargeAmount(prev => ({
+        ...prev,
+        [userId]: ''
+      }))
+
+      // 刷新该用户信息
+      await refreshUserInfo(userId)
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: error instanceof Error ? error.message : "充值失败"
+      })
+    }
   }
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>用户搜索</CardTitle>
+          <CardTitle>用户充值</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSearch} className="flex gap-4">
+          <div className="flex space-x-2 mb-6">
             <Input
-              type="text"
-              placeholder="搜索用户..."
+              placeholder="搜索用户名/身份证号/手机号..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
-            <Button type="submit">
-              <Search className="mr-2 h-4 w-4" />
-              搜索
+            <Button onClick={handleSearch} disabled={isSearching}>
+              {isSearching ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Search className="h-4 w-4" />
+              )}
+              <span className="ml-2">搜索</span>
             </Button>
-          </form>
+          </div>
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>用户ID</TableHead>
+                <TableHead>姓名</TableHead>
+                <TableHead>身份证号</TableHead>
+                <TableHead>手机号</TableHead>
+                <TableHead>当前余额</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead>充值金额</TableHead>
+                <TableHead>操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {users.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell>{user.id}</TableCell>
+                  <TableCell>{user.name}</TableCell>
+                  <TableCell className="space-x-2">
+                    <span>
+                      {visibleInfo[user.id]?.identityCard 
+                        ? user.identityCard 
+                        : maskIdentityCard(user.identityCard)}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => toggleVisibility(user.id, 'identityCard')}
+                    >
+                      {visibleInfo[user.id]?.identityCard ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TableCell>
+                  <TableCell className="space-x-2">
+                    <span>
+                      {visibleInfo[user.id]?.phoneNumber 
+                        ? user.phoneNumber 
+                        : maskPhoneNumber(user.phoneNumber)}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => toggleVisibility(user.id, 'phoneNumber')}
+                    >
+                      {visibleInfo[user.id]?.phoneNumber ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TableCell>
+                  <TableCell>¥{user.balance}</TableCell>
+                  <TableCell>{user.status}</TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="输入金额"
+                      value={rechargeAmount[user.id] || ''}
+                      onChange={(e) => setRechargeAmount(prev => ({
+                        ...prev,
+                        [user.id]: e.target.value
+                      }))}
+                      className="w-[120px]"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      size="sm"
+                      onClick={() => handleRecharge(user.id)}
+                      disabled={!rechargeAmount[user.id] || isNaN(parseFloat(rechargeAmount[user.id]))}
+                    >
+                      充值
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
-
-      {searchResults.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>搜索结果</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>姓名</TableHead>
-                  <TableHead>身份证号</TableHead>
-                  <TableHead>手机号</TableHead>
-                  <TableHead>当前余额</TableHead>
-                  <TableHead>操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {searchResults.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>{user.name}</TableCell>
-                    <TableCell>{user.idCard}</TableCell>
-                    <TableCell>{user.phone}</TableCell>
-                    <TableCell>¥{user.balance}</TableCell>
-                    <TableCell>
-                      <Button onClick={() => handleSelectUser(user)} variant="outline" size="sm">
-                        选择
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
-
-      {selectedUser && (
-        <Card>
-          <CardHeader>
-            <CardTitle>充值表单</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleRecharge} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label htmlFor="user-name">用户名</label>
-                  <Input id="user-name" value={selectedUser.name} readOnly />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="current-balance">当前余额</label>
-                  <Input id="current-balance" value={`¥${selectedUser.balance}`} readOnly />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="amount-input">充值金额</label>
-                  <Input
-                    id="amount-input"
-                    type="number"
-                    placeholder="输入充值金额"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-              </div>
-
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    处理中...
-                  </>
-                ) : (
-                  '确认充值'
-                )}
-              </Button>
-            </form>
-            {updatedBalance !== null && (
-              <CardContent className="mt-4">
-                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-                  <strong className="font-bold">充值成功！</strong>
-                  <span className="block sm:inline"> 用户 {selectedUser.name} 的新余额为 ¥{updatedBalance.toFixed(2)}。</span>
-                </div>
-              </CardContent>
-            )}
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

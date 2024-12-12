@@ -1,148 +1,250 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { API_URL, API_ENDPOINTS } from '@/lib/api-config'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/use-toast'
-import { Pencil, Save, X } from 'lucide-react'
+import { format } from 'date-fns'
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react'
 
-// Mock user data
-const mockUser = {
-  id: '1',
-  name: '张三',
-  email: 'zhangsan@example.com',
-  phone: '13800138000',
-  idCard: '110101199001011234',
-  balance: 100,
-  status: '在线',
-  avatar: '/placeholder.svg?height=100&width=100',
-  memberSince: '2023-01-01',
+type User = {
+  id: number
+  name: string
+  identityCard: string
+  phoneNumber: string
+  balance: number
+  status: 'Offline' | 'Online' | 'Banned'
+  machineId: number | null
+  lastOnComputerTime: string | null
+  lastOffComputerTime: string | null
+  registerTime: string | null
+}
+
+type SensitiveData = {
+  identityCard: boolean
+  phoneNumber: boolean
+  balance: boolean
 }
 
 export default function UserProfilePage() {
   const router = useRouter()
-  const [user, setUser] = useState(mockUser)
-  const [isEditing, setIsEditing] = useState(false)
-  const [editedUser, setEditedUser] = useState(mockUser)
+  const searchParams = useSearchParams()
+  const userId = searchParams.get('id')
+  const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [showSensitive, setShowSensitive] = useState<SensitiveData>({
+    identityCard: false,
+    phoneNumber: false,
+    balance: false,
+  })
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setEditedUser(prev => ({ ...prev, [name]: value }))
+  useEffect(() => {
+    const fetchUser = async () => {
+      if (!userId) {
+        toast({
+          variant: "destructive",
+          title: "错误",
+          description: "用户ID不能为空"
+        })
+        router.push('/admin/user_list')
+        return
+      }
+
+      try {
+        const response = await fetch(`${API_URL}${API_ENDPOINTS.USERS}/${userId}`)
+        if (!response.ok) throw new Error('获取用户信息失败')
+        
+        const data = await response.json()
+        setUser(data)
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "错误",
+          description: error instanceof Error ? error.message : "获取用户信息失败"
+        })
+        router.push('/admin/user_list')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchUser()
+  }, [userId, router])
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'Online':
+        return <Badge variant="default">在线</Badge>
+      case 'Offline':
+        return <Badge variant="secondary">离线</Badge>
+      case 'Banned':
+        return <Badge variant="destructive">封禁</Badge>
+      default:
+        return <Badge variant="secondary">{status}</Badge>
+    }
   }
 
-  const handleSave = () => {
-    setUser(editedUser)
-    setIsEditing(false)
-    toast({
-      title: "保存成功",
-      description: "用户信息已更新",
-    })
+  const formatDateTime = (dateTime: string | null) => {
+    if (!dateTime) return '-'
+    return format(new Date(dateTime), 'yyyy-MM-dd HH:mm:ss')
   }
 
-  const handleCancel = () => {
-    setEditedUser(user)
-    setIsEditing(false)
+  const toggleSensitiveData = (field: keyof SensitiveData) => {
+    setShowSensitive(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }))
+  }
+
+  const maskData = (data: string, show: boolean) => {
+    if (!data) return '-'
+    return show ? data : '******'
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p>加载中...</p>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p>用户不存在</p>
+      </div>
+    )
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <Card className="max-w-3xl mx-auto">
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle className="text-2xl font-bold">用户档案</CardTitle>
-            <Button variant="outline" onClick={() => router.back()}>返回</Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col md:flex-row gap-6">
-            <div className="flex flex-col items-center space-y-4">
-              <Avatar className="w-32 h-32">
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback>{user.name[0]}</AvatarFallback>
-              </Avatar>
-              <Badge variant={user.status === '在线' ? 'default' : 'secondary'}>
-                {user.status}
-              </Badge>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <Button
+          variant="outline"
+          onClick={() => router.back()}
+          className="flex items-center"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          返回
+        </Button>
+        <h1 className="text-3xl font-bold">用户档案</h1>
+        <div className="w-[100px]" />
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>基本信息</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <p className="text-sm text-muted-foreground">用户ID</p>
+              <p className="text-lg font-medium">{user.id}</p>
             </div>
-            <div className="flex-grow space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">姓名</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    value={isEditing ? editedUser.name : user.name}
-                    onChange={handleInputChange}
-                    readOnly={!isEditing}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">邮箱</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    value={isEditing ? editedUser.email : user.email}
-                    onChange={handleInputChange}
-                    readOnly={!isEditing}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">手机号</Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    value={isEditing ? editedUser.phone : user.phone}
-                    onChange={handleInputChange}
-                    readOnly={!isEditing}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="idCard">身份证号</Label>
-                  <Input
-                    id="idCard"
-                    name="idCard"
-                    value={isEditing ? editedUser.idCard : user.idCard}
-                    onChange={handleInputChange}
-                    readOnly={!isEditing}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>账户余额</Label>
-                <p className="text-2xl font-bold">¥{user.balance.toFixed(2)}</p>
-              </div>
-              <div className="space-y-2">
-                <Label>注册日期</Label>
-                <p>{user.memberSince}</p>
+            <div>
+              <p className="text-sm text-muted-foreground">姓名</p>
+              <p className="text-lg font-medium">{user.name}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">身份证号</p>
+              <div className="flex items-center space-x-2">
+                <p className="text-lg font-medium">
+                  {maskData(user.identityCard, showSensitive.identityCard)}
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleSensitiveData('identityCard')}
+                >
+                  {showSensitive.identityCard ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
               </div>
             </div>
-          </div>
-          <div className="mt-6 flex justify-end space-x-2">
-            {isEditing ? (
-              <>
-                <Button onClick={handleSave}>
-                  <Save className="mr-2 h-4 w-4" />
-                  保存
+            <div>
+              <p className="text-sm text-muted-foreground">手机号</p>
+              <div className="flex items-center space-x-2">
+                <p className="text-lg font-medium">
+                  {maskData(user.phoneNumber, showSensitive.phoneNumber)}
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleSensitiveData('phoneNumber')}
+                >
+                  {showSensitive.phoneNumber ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </Button>
-                <Button variant="outline" onClick={handleCancel}>
-                  <X className="mr-2 h-4 w-4" />
-                  取消
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>账户状态</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <p className="text-sm text-muted-foreground">账户余额</p>
+              <div className="flex items-center space-x-2">
+                <p className="text-lg font-medium">
+                  ¥{showSensitive.balance ? user.balance.toFixed(2) : '******'}
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleSensitiveData('balance')}
+                >
+                  {showSensitive.balance ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </Button>
-              </>
-            ) : (
-              <Button onClick={() => setIsEditing(true)}>
-                <Pencil className="mr-2 h-4 w-4" />
-                编辑
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              </div>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">当前状态</p>
+              <div className="mt-1">{getStatusBadge(user.status)}</div>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">注册时间</p>
+              <p className="text-lg font-medium">{formatDateTime(user.registerTime)}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>使用记录</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <p className="text-sm text-muted-foreground">当前使用机器</p>
+              <p className="text-lg font-medium">{user.machineId || '-'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">最近上机时间</p>
+              <p className="text-lg font-medium">{formatDateTime(user.lastOnComputerTime)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">最近下机时间</p>
+              <p className="text-lg font-medium">{formatDateTime(user.lastOffComputerTime)}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

@@ -25,6 +25,20 @@ export const API_ENDPOINTS = {
   RECHARGE: '/api/users/recharge',
   
   // 日志相关接口
-  USER_LOGS: '/api/logs/user',
-  MANAGEMENT_LOGS: '/api/logs/management'
+  USER_LOGS: '/api/userlogs',
+  MANAGEMENT_LOGS: '/api/managementlogs',
+  
+  // 商品管理相关接口
+  COMMODITIES: '/api/commodities',
+  
+  // 用户登录相关接口
+  USER_LOGIN: '/api/users/login',
+  
+  USERS_START_USING_POST: (userId: number, machineId: number) => `/api/users/${userId}/start/${machineId}`,
+  USERS_STOP_USING_POST: (userId: number) => `/api/users/${userId}/stop`,
+  
+  // 添加订单相关端点
+  ORDERS: '/api/orders',
+  ORDERS_SEARCH: '/api/orders/search',
+  ORDER_STATUS: (id: number) => `/api/orders/${id}/status`,
 } 

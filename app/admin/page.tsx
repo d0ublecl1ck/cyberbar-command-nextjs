@@ -1,226 +1,252 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, Legend, BarChart, Bar } from 'recharts'
-import { ErrorComputerCount } from '@/components/error-computer-count'
-import dynamic from 'next/dynamic'
 import { useAdminAuth } from '@/contexts/admin-auth-context'
+import dynamic from 'next/dynamic'
+import { API_URL, API_ENDPOINTS } from '@/lib/api-config'
+import { Button } from '@/components/ui/button'
+import { toast } from '@/components/ui/use-toast'
+import { Badge } from '@/components/ui/badge'
+
+// 添加 Order 类型定义
+type OrderCommodity = {
+  commodityId: number
+  name: string
+  price: number
+  quantity: number
+}
+
+type Order = {
+  id: number
+  userId: number
+  machineId: number
+  orderDate: string
+  status: 'Pending' | 'Completed' | 'Cancelled'
+  totalPrice: number
+  commodities: OrderCommodity[]
+  machineZoneId: number
+}
 
 // 动态导入 DynamicClock 组件并禁用 SSR
 const DynamicClockComponent = dynamic(() => import('@/components/dynamic-clock').then(mod => mod.DynamicClock), {
   ssr: false
 })
 
-// Mock data for the income chart
-const mockIncomeData = {
-  daily: [
-    { name: '周一', income: 4000, users: 120 },
-    { name: '周二', income: 3000, users: 98 },
-    { name: '周三', income: 2000, users: 86 },
-    { name: '周四', income: 2780, users: 99 },
-    { name: '周五', income: 1890, users: 76 },
-    { name: '周六', income: 2390, users: 84 },
-    { name: '周日', income: 3490, users: 110 },
-  ],
-  weekly: [
-    { name: '第1周', income: 15000, users: 450 },
-    { name: '第2周', income: 18000, users: 520 },
-    { name: '第3周', income: 12000, users: 380 },
-    { name: '第4周', income: 20000, users: 600 },
-  ],
-  monthly: [
-    { name: '1月', income: 65000, users: 2100 },
-    { name: '2月', income: 59000, users: 1900 },
-    { name: '3月', income: 80000, users: 2500 },
-    { name: '4月', income: 81000, users: 2600 },
-    { name: '5月', income: 56000, users: 1800 },
-    { name: '6月', income: 55000, users: 1750 },
-    { name: '7月', income: 40000, users: 1500 },
-  ],
-}
-
-// Mock data for computer usage by zone
-const mockZoneUsageData = [
-  { name: '一楼-A区', value: 30 },
-  { name: '一楼-B区', value: 25 },
-  { name: '二楼-C区', value: 35 },
-  { name: '二楼-D区', value: 20 },
-]
-
-// Mock data for peak hours
-const mockPeakHoursData = [
-  { hour: '00:00', users: 10 },
-  { hour: '02:00', users: 5 },
-  { hour: '04:00', users: 3 },
-  { hour: '06:00', users: 8 },
-  { hour: '08:00', users: 15 },
-  { hour: '10:00', users: 25 },
-  { hour: '12:00', users: 30 },
-  { hour: '14:00', users: 35 },
-  { hour: '16:00', users: 40 },
-  { hour: '18:00', users: 45 },
-  { hour: '20:00', users: 38 },
-  { hour: '22:00', users: 20 },
-]
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042']
-
 export default function AdminDashboardPage() {
   const router = useRouter()
   const { isAuthenticated } = useAdminAuth()
-  const [timeRange, setTimeRange] = useState('daily')
+  const [messages, setMessages] = useState<string[]>([])
+  const [pendingOrders, setPendingOrders] = useState<Order[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [machineZones, setMachineZones] = useState<Map<number, string>>(new Map())
+  const [userNames, setUserNames] = useState<Map<number, string>>(new Map())
 
+  // 获取机器所在区域信息
+  const fetchMachineZone = async (machineId: number) => {
+    try {
+      const response = await fetch(`${API_URL}${API_ENDPOINTS.MACHINES}/${machineId}`)
+      if (!response.ok) throw new Error('获取机器信息失败')
+      const machine = await response.json()
+      
+      if (machine.zoneId) {
+        const zoneResponse = await fetch(`${API_URL}${API_ENDPOINTS.ZONES}/${machine.zoneId}`)
+        if (!zoneResponse.ok) throw new Error('获取区域信息失败')
+        const zone = await zoneResponse.json()
+        setMachineZones(prev => new Map(prev).set(machineId, zone.name))
+      }
+    } catch (error) {
+      console.error('获取机器区域信息失败:', error)
+    }
+  }
+
+  // 添加获取用户信息的函数
+  const fetchUserName = async (userId: number) => {
+    try {
+      const response = await fetch(`${API_URL}${API_ENDPOINTS.USERS}/${userId}`)
+      if (!response.ok) throw new Error('获取用户信息失败')
+      const user = await response.json()
+      setUserNames(prev => new Map(prev).set(userId, user.name))
+    } catch (error) {
+      console.error('获取用户信息失败:', error)
+    }
+  }
+
+  // 修改获取订单的函数，添加获取用户信息的逻辑
+  const fetchPendingOrders = async () => {
+    try {
+      setIsLoading(true)
+      const params = new URLSearchParams({
+        status: 'Pending',
+        pageNum: '1',
+        pageSize: '10'
+      })
+      
+      const response = await fetch(`${API_URL}${API_ENDPOINTS.ORDERS}/search?${params}`)
+      if (!response.ok) throw new Error('获取订单失败')
+      
+      const data = await response.json()
+      setPendingOrders(data.list || [])
+      
+      // 获取每个订单对应的用户信息和机器区域信息
+      for (const order of data.list || []) {
+        fetchUserName(order.userId)
+        fetchMachineZone(order.machineId)
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: error instanceof Error ? error.message : "获取订单失败"
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // 处理订单
+  const handleOrder = async (orderId: number, action: 'complete' | 'cancel') => {
+    try {
+      // 构造包含 status 参数的 URL
+      const status = action === 'complete' ? 'Completed' : 'Cancelled'
+      const url = `${API_URL}${API_ENDPOINTS.ORDERS}/${orderId}/status?status=${status}`
+      
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || '处理订单失败')
+      }
+      
+      toast({
+        title: "成功",
+        description: action === 'complete' ? "订单已完成" : "订单已取消"
+      })
+      
+      // 刷新订单列表
+      fetchPendingOrders()
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: error instanceof Error ? error.message : "处理订单失败"
+      })
+    }
+  }
+
+  // 保持现有的认证检查和消息获取逻辑
   useEffect(() => {
     if (!isAuthenticated) {
       router.replace('/admin/login?reason=unauthenticated')
-      return
     }
   }, [isAuthenticated, router])
 
-  // 如果未认证，返回 null 避免闪烁
+  // 修改轮询间隔为 3 秒
+  useEffect(() => {
+    if (isAuthenticated) {
+      // 初始加载
+      fetchPendingOrders()
+      
+      // 每3秒轮询一次
+      const interval = setInterval(fetchPendingOrders, 3000)
+      
+      return () => clearInterval(interval)
+    }
+  }, [isAuthenticated])
+
   if (!isAuthenticated) {
     return null
   }
 
-  const totalIncome = mockIncomeData[timeRange as keyof typeof mockIncomeData].reduce((sum, item) => sum + item.income, 0)
-  const averageIncome = totalIncome / mockIncomeData[timeRange as keyof typeof mockIncomeData].length
-  const totalUsers = mockIncomeData[timeRange as keyof typeof mockIncomeData].reduce((sum, item) => sum + item.users, 0)
-  const averageUsers = totalUsers / mockIncomeData[timeRange as keyof typeof mockIncomeData].length
-
   return (
     <div className="space-y-8">
       <h1 className="text-3xl font-bold">管理员仪表板</h1>
-      
+
       <div className="text-center">
         <DynamicClockComponent />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* 订单管理卡片 */}
         <Card>
           <CardHeader>
-            <CardTitle>总收入</CardTitle>
+            <CardTitle>待处理订单</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-4xl font-bold">¥{totalIncome.toLocaleString()}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>平均收入</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-4xl font-bold">¥{averageIncome.toFixed(2).toLocaleString()}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>总用户数</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-4xl font-bold">{totalUsers.toLocaleString()}</p>
-          </CardContent>
-        </Card>
-        <ErrorComputerCount />
-      </div>
-
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold">收入和用户趋势</h2>
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="选择时间范围" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="daily">日报表</SelectItem>
-              <SelectItem value="weekly">周报表</SelectItem>
-              <SelectItem value="monthly">月报表</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>收入和用户数量趋势图</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[400px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={mockIncomeData[timeRange as keyof typeof mockIncomeData]}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" stroke="hsl(var(--foreground))" />
-                  <YAxis yAxisId="left" stroke="hsl(var(--foreground))" />
-                  <YAxis yAxisId="right" orientation="right" stroke="hsl(var(--foreground))" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--background))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '4px',
-                    }}
-                    labelStyle={{ color: 'hsl(var(--foreground))' }}
-                  />
-                  <Legend />
-                  <Line yAxisId="left" type="monotone" dataKey="income" name="收入" stroke="#8884d8" activeDot={{ r: 8 }} />
-                  <Line yAxisId="right" type="monotone" dataKey="users" name="用户数" stroke="#82ca9d" />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>区域使用情况</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={mockZoneUsageData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {mockZoneUsageData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
+            {pendingOrders.length === 0 ? (
+              <p className="text-center text-muted-foreground">暂无待处理订单</p>
+            ) : (
+              <div className="space-y-4">
+                {pendingOrders.map((order) => (
+                  <div key={order.id} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="font-medium">订单 #{order.id}</span>
+                        <Badge className="ml-2">待处理</Badge>
+                      </div>
+                      <span className="text-lg font-semibold">¥{order.totalPrice.toFixed(2)}</span>
+                    </div>
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      <p>用户: {userNames.get(order.userId) || '加载中...'}</p>
+                      <p>机器ID: {order.machineId}</p>
+                      <p>机器所在区域: {machineZones.get(order.machineId) || '加载中...'}</p>
+                      <p>下单时间: {new Date(order.orderDate).toLocaleString()}</p>
+                      <p>商品列表:</p>
+                      <ul className="list-disc list-inside mt-1">
+                        {order.commodities?.map((item) => (
+                          <li key={item.commodityId}>
+                            {item.name} x {item.quantity} = ¥{(item.price * item.quantity).toFixed(2)}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="flex justify-end space-x-2 mt-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleOrder(order.id, 'cancel')}
+                      >
+                        取消订单
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleOrder(order.id, 'complete')}
+                      >
+                        完成订单
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </CardContent>
-          </Card>
+            )}
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>高峰时段分析</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={mockPeakHoursData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="hour" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="users" fill="#8884d8" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* 保持现有的用户消息卡片 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>用户消息</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {messages.length === 0 ? (
+              <p className="text-center text-muted-foreground">暂无消息</p>
+            ) : (
+              <ul className="space-y-2">
+                {messages.map((message, index) => (
+                  <li key={index} className="p-2 border rounded">
+                    {message}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

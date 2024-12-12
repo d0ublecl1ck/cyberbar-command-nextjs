@@ -1,32 +1,51 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { API_URL, API_ENDPOINTS } from '@/lib/api-config'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { AlertTriangle } from 'lucide-react'
+import { toast } from '@/components/ui/use-toast'
+
+type MachineStats = {
+  totalMachines: number
+  occupiedMachines: number
+  idleMachines: number
+  abnormalMachines: number
+}
 
 export function ErrorComputerCount() {
-  const [errorCount, setErrorCount] = useState(0)
+  const [stats, setStats] = useState<MachineStats>({
+    totalMachines: 0,
+    occupiedMachines: 0,
+    idleMachines: 0,
+    abnormalMachines: 0
+  })
+
+  const fetchMachineStats = async () => {
+    try {
+      const response = await fetch(`${API_URL}${API_ENDPOINTS.MACHINES}/stats`)
+      if (!response.ok) throw new Error('获取机器统计信息失败')
+      const data = await response.json()
+      setStats(data)
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: error instanceof Error ? error.message : "获取机器统计信息失败"
+      })
+    }
+  }
 
   useEffect(() => {
-    // In a real application, you would fetch this data from your API
-    // This is just a mock implementation
-    const fetchErrorCount = async () => {
-      // Simulating an API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      setErrorCount(Math.floor(Math.random() * 5)) // Random number between 0 and 4
-    }
-
-    fetchErrorCount()
+    fetchMachineStats()
   }, [])
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">故障电脑数量</CardTitle>
-        <AlertTriangle className="h-4 w-4 text-yellow-500" />
+      <CardHeader>
+        <CardTitle>故障电脑数量</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="text-4xl font-bold">{errorCount}</div>
+        <p className="text-4xl font-bold">{stats.abnormalMachines}</p>
       </CardContent>
     </Card>
   )

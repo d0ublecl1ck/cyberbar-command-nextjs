@@ -1,1 +1,1828 @@
-{"swagger":"2.0","info":{"description":"Zone的CRUD接口文档","version":"1.0","title":"Zone API文档"},"host":"localhost:8080","basePath":"/","tags":[{"name":"区域管理接口","description":"Zone Controller"},{"name":"机器管理接口","description":"Machine Controller"},{"name":"用户日志接口","description":"User Log Controller"},{"name":"用户管理接口","description":"User Controller"},{"name":"管理员接口","description":"Admin Controller"},{"name":"管理日志接口","description":"Management Log Controller"}],"paths":{"/api/admin/login":{"post":{"tags":["管理员接口"],"summary":"管理员登录","operationId":"loginUsingPOST","consumes":["application/json"],"produces":["application/json;charset=UTF-8"],"parameters":[{"name":"password","in":"query","description":"密码","required":true,"type":"string","allowEmptyValue":false},{"name":"username","in":"query","description":"用户名","required":true,"type":"string","allowEmptyValue":false}],"responses":{"200":{"description":"OK","schema":{"type":"object"}},"201":{"description":"Created"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}},"deprecated":false}},"/api/machines":{"get":{"tags":["机器管理接口"],"summary":"获取所有机器","operationId":"getAllMachinesUsingGET","produces":["*/*"],"parameters":[{"name":"maxPrice","in":"query","description":"最高价格","required":false,"type":"number","allowEmptyValue":false},{"name":"minPrice","in":"query","description":"最低价格","required":false,"type":"number","allowEmptyValue":false},{"name":"status","in":"query","description":"状态(Abnormal/Idle/Occupied)","required":false,"type":"string","allowEmptyValue":false},{"name":"zoneId","in":"query","description":"区域ID","required":false,"type":"integer","format":"int32","allowEmptyValue":false}],"responses":{"200":{"description":"OK","schema":{"type":"array","items":{"$ref":"#/definitions/Machine"}}},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}},"deprecated":false},"post":{"tags":["机器管理接口"],"summary":"创建新机器","operationId":"createMachineUsingPOST","consumes":["application/json"],"produces":["*/*"],"parameters":[{"in":"body","name":"machine","description":"machine","required":true,"schema":{"$ref":"#/definitions/Machine"}}],"responses":{"200":{"description":"OK","schema":{"type":"integer","format":"int32"}},"201":{"description":"Created"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}},"deprecated":false}},"/api/machines/stats":{"get":{"tags":["机器管理接口"],"summary":"获取机器统计信息","operationId":"getMachineStatsUsingGET","produces":["*/*"],"responses":{"200":{"description":"OK","schema":{"type":"object","additionalProperties":{"type":"object"}}},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}},"deprecated":false}},"/api/machines/zone/{zoneId}":{"get":{"tags":["机器管理接口"],"summary":"根据区域ID获取机器列表","operationId":"getMachinesByZoneIdUsingGET","produces":["*/*"],"parameters":[{"name":"zoneId","in":"path","description":"区域ID","required":true,"type":"integer","format":"int32"}],"responses":{"200":{"description":"OK","schema":{"type":"array","items":{"$ref":"#/definitions/Machine"}}},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}},"deprecated":false}},"/api/machines/{id}":{"get":{"tags":["机器管理接口"],"summary":"根据ID获取机器","operationId":"getMachineByIdUsingGET","produces":["*/*"],"parameters":[{"name":"id","in":"path","description":"机器ID","required":true,"type":"integer","format":"int32"}],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Machine"}},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}},"deprecated":false},"put":{"tags":["机器管理接口"],"summary":"更新机器信息","operationId":"updateMachineUsingPUT","consumes":["application/json"],"produces":["*/*"],"parameters":[{"name":"id","in":"path","description":"机器ID","required":true,"type":"integer","format":"int32"},{"in":"body","name":"machine","description":"machine","required":true,"schema":{"$ref":"#/definitions/Machine"}}],"responses":{"200":{"description":"OK","schema":{"type":"integer","format":"int32"}},"201":{"description":"Created"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}},"deprecated":false},"delete":{"tags":["机器管理接口"],"summary":"删除机器","operationId":"deleteMachineUsingDELETE","produces":["*/*"],"parameters":[{"name":"id","in":"path","description":"机器ID","required":true,"type":"integer","format":"int32"}],"responses":{"200":{"description":"OK","schema":{"type":"integer","format":"int32"}},"204":{"description":"No Content"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"}},"deprecated":false}},"/api/managementlogs":{"get":{"tags":["管理日志接口"],"summary":"条件查询管理日志","operationId":"getManagementLogsUsingGET","produces":["*/*"],"parameters":[{"name":"adminId","in":"query","description":"管理员ID","required":false,"type":"integer","format":"int32","allowEmptyValue":false},{"name":"endTime","in":"query","description":"结束时间","required":false,"type":"string","format":"date-time","allowEmptyValue":false},{"name":"pageNum","in":"query","description":"页码","required":false,"type":"integer","default":1,"format":"int32","allowEmptyValue":false},{"name":"pageSize","in":"query","description":"每页大小","required":false,"type":"integer","default":10,"format":"int32","allowEmptyValue":false},{"name":"startTime","in":"query","description":"开始时间","required":false,"type":"string","format":"date-time","allowEmptyValue":false}],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/PageInfo«ManagementLog»"}},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}},"deprecated":false},"post":{"tags":["管理日志接口"],"summary":"创建管理日志","operationId":"createManagementLogUsingPOST","consumes":["application/json"],"produces":["*/*"],"parameters":[{"in":"body","name":"managementLog","description":"managementLog","required":true,"schema":{"$ref":"#/definitions/ManagementLog"}}],"responses":{"200":{"description":"OK","schema":{"type":"integer","format":"int32"}},"201":{"description":"Created"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}},"deprecated":false}},"/api/managementlogs/{id}":{"put":{"tags":["管理日志接口"],"summary":"更新管理日志","operationId":"updateManagementLogUsingPUT","consumes":["application/json"],"produces":["*/*"],"parameters":[{"name":"id","in":"path","description":"日志ID","required":true,"type":"integer","format":"int32"},{"in":"body","name":"managementLog","description":"managementLog","required":true,"schema":{"$ref":"#/definitions/ManagementLog"}}],"responses":{"200":{"description":"OK","schema":{"type":"integer","format":"int32"}},"201":{"description":"Created"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}},"deprecated":false},"delete":{"tags":["管理日志接口"],"summary":"删除管理日志","operationId":"deleteManagementLogUsingDELETE","produces":["*/*"],"parameters":[{"name":"id","in":"path","description":"日志ID","required":true,"type":"integer","format":"int32"}],"responses":{"200":{"description":"OK","schema":{"type":"integer","format":"int32"}},"204":{"description":"No Content"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"}},"deprecated":false}},"/api/userlogs":{"get":{"tags":["用户日志接口"],"summary":"条件查询日志","operationId":"getUserLogsUsingGET","produces":["*/*"],"parameters":[{"name":"endTime","in":"query","description":"结束时间","required":false,"type":"string","format":"date-time","allowEmptyValue":false},{"name":"pageNum","in":"query","description":"页码","required":false,"type":"integer","default":1,"format":"int32","allowEmptyValue":false},{"name":"pageSize","in":"query","description":"每页大小","required":false,"type":"integer","default":10,"format":"int32","allowEmptyValue":false},{"name":"startTime","in":"query","description":"开始时间","required":false,"type":"string","format":"date-time","allowEmptyValue":false},{"name":"userId","in":"query","description":"用户ID","required":false,"type":"integer","format":"int32","allowEmptyValue":false}],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/PageInfo«UserLog»"}},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}},"deprecated":false},"post":{"tags":["用户日志接口"],"summary":"创建日志","operationId":"createUserLogUsingPOST","consumes":["application/json"],"produces":["*/*"],"parameters":[{"in":"body","name":"userLog","description":"userLog","required":true,"schema":{"$ref":"#/definitions/UserLog"}}],"responses":{"200":{"description":"OK","schema":{"type":"integer","format":"int32"}},"201":{"description":"Created"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}},"deprecated":false}},"/api/userlogs/{id}":{"put":{"tags":["用户日志接口"],"summary":"更新日志","operationId":"updateUserLogUsingPUT","consumes":["application/json"],"produces":["*/*"],"parameters":[{"name":"id","in":"path","description":"日志ID","required":true,"type":"integer","format":"int32"},{"in":"body","name":"userLog","description":"userLog","required":true,"schema":{"$ref":"#/definitions/UserLog"}}],"responses":{"200":{"description":"OK","schema":{"type":"integer","format":"int32"}},"201":{"description":"Created"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}},"deprecated":false},"delete":{"tags":["用户日志接口"],"summary":"删除日志","operationId":"deleteUserLogUsingDELETE","produces":["*/*"],"parameters":[{"name":"id","in":"path","description":"日志ID","required":true,"type":"integer","format":"int32"}],"responses":{"200":{"description":"OK","schema":{"type":"integer","format":"int32"}},"204":{"description":"No Content"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"}},"deprecated":false}},"/api/users":{"get":{"tags":["用户管理接口"],"summary":"获取所有用户","operationId":"getAllUsersUsingGET","produces":["*/*"],"responses":{"200":{"description":"OK","schema":{"type":"array","items":{"$ref":"#/definitions/User"}}},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}},"deprecated":false},"post":{"tags":["用户管理接口"],"summary":"创建新用户","operationId":"createUserUsingPOST","consumes":["application/json"],"produces":["*/*"],"parameters":[{"in":"body","name":"user","description":"user","required":true,"schema":{"$ref":"#/definitions/User"}}],"responses":{"200":{"description":"OK","schema":{"type":"integer","format":"int32"}},"201":{"description":"Created"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}},"deprecated":false}},"/api/users/search":{"get":{"tags":["用户管理接口"],"summary":"搜索用户","operationId":"searchUsersUsingGET","produces":["*/*"],"parameters":[{"name":"keyword","in":"query","description":"关键字","required":false,"type":"string","allowEmptyValue":false},{"name":"pageNum","in":"query","description":"页码","required":false,"type":"integer","default":1,"format":"int32","allowEmptyValue":false},{"name":"pageSize","in":"query","description":"每页大小","required":false,"type":"integer","default":10,"format":"int32","allowEmptyValue":false},{"name":"status","in":"query","description":"用户状态","required":false,"type":"string","allowEmptyValue":false}],"responses":{"200":{"description":"OK","schema":{"type":"array","items":{"$ref":"#/definitions/User"}}},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}},"deprecated":false}},"/api/users/stats":{"get":{"tags":["用户管理接口"],"summary":"获取用户统计信息","operationId":"getUserStatsUsingGET","produces":["*/*"],"responses":{"200":{"description":"OK","schema":{"type":"object","additionalProperties":{"type":"object"}}},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}},"deprecated":false}},"/api/users/{id}":{"get":{"tags":["用户管理接口"],"summary":"根据ID获取用户","operationId":"getUserByIdUsingGET","produces":["*/*"],"parameters":[{"name":"id","in":"path","description":"id","required":true,"type":"integer","format":"int32"}],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/User"}},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}},"deprecated":false},"put":{"tags":["用户管理接口"],"summary":"更新用户信息","operationId":"updateUserUsingPUT","consumes":["application/json"],"produces":["*/*"],"parameters":[{"name":"id","in":"path","description":"id","required":true,"type":"integer","format":"int32"},{"in":"body","name":"user","description":"user","required":true,"schema":{"$ref":"#/definitions/User"}}],"responses":{"200":{"description":"OK","schema":{"type":"integer","format":"int32"}},"201":{"description":"Created"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}},"deprecated":false},"delete":{"tags":["用户管理接口"],"summary":"删除用户","operationId":"deleteUserUsingDELETE","produces":["*/*"],"parameters":[{"name":"id","in":"path","description":"id","required":true,"type":"integer","format":"int32"}],"responses":{"200":{"description":"OK","schema":{"type":"integer","format":"int32"}},"204":{"description":"No Content"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"}},"deprecated":false}},"/api/zones":{"get":{"tags":["区域管理接口"],"summary":"获取所有区域","operationId":"getAllZonesUsingGET","produces":["*/*"],"responses":{"200":{"description":"OK","schema":{"type":"array","items":{"$ref":"#/definitions/Zone"}}},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}},"deprecated":false},"post":{"tags":["区域管理接口"],"summary":"创建新区域","operationId":"createZoneUsingPOST","consumes":["application/json"],"produces":["*/*"],"parameters":[{"in":"body","name":"zone","description":"zone","required":true,"schema":{"$ref":"#/definitions/Zone"}}],"responses":{"200":{"description":"OK","schema":{"type":"object","additionalProperties":{"type":"string"}}},"201":{"description":"Created"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}},"deprecated":false}},"/api/zones/check/{name}":{"get":{"tags":["区域管理接口"],"summary":"检查区域名称是否已存在","operationId":"checkZoneNameUsingGET","produces":["*/*"],"parameters":[{"name":"name","in":"path","description":"name","required":true,"type":"string"}],"responses":{"200":{"description":"OK","schema":{"type":"object","additionalProperties":{"type":"object"}}},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}},"deprecated":false}},"/api/zones/{id}":{"get":{"tags":["区域管理接口"],"summary":"根据ID获取区域","operationId":"getZoneByIdUsingGET","produces":["*/*"],"parameters":[{"name":"id","in":"path","description":"id","required":true,"type":"integer","format":"int32"}],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Zone"}},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}},"deprecated":false},"put":{"tags":["区域管理接口"],"summary":"更新区域信息","operationId":"updateZoneUsingPUT","consumes":["application/json"],"produces":["*/*"],"parameters":[{"name":"id","in":"path","description":"id","required":true,"type":"integer","format":"int32"},{"in":"body","name":"zone","description":"zone","required":true,"schema":{"$ref":"#/definitions/Zone"}}],"responses":{"200":{"description":"OK","schema":{"type":"object","additionalProperties":{"type":"string"}}},"201":{"description":"Created"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}},"deprecated":false},"delete":{"tags":["区域管理接口"],"summary":"删除区域","operationId":"deleteZoneUsingDELETE","produces":["*/*"],"parameters":[{"name":"id","in":"path","description":"id","required":true,"type":"integer","format":"int32"}],"responses":{"200":{"description":"OK","schema":{"type":"object","additionalProperties":{"type":"string"}}},"204":{"description":"No Content"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"}},"deprecated":false}}},"definitions":{"Machine":{"type":"object","properties":{"id":{"type":"integer","format":"int32"},"onlineUserId":{"type":"integer","format":"int32"},"price":{"type":"number","format":"double"},"status":{"type":"string"},"zoneId":{"type":"integer","format":"int32"}},"title":"Machine"},"ManagementLog":{"type":"object","properties":{"adminId":{"type":"integer","format":"int32"},"detail":{"type":"string"},"id":{"type":"integer","format":"int32"},"operation":{"type":"string"},"operationTime":{"type":"string","format":"date-time"}},"title":"ManagementLog"},"PageInfo«ManagementLog»":{"type":"object","properties":{"endRow":{"type":"integer","format":"int64"},"hasNextPage":{"type":"boolean"},"hasPreviousPage":{"type":"boolean"},"isFirstPage":{"type":"boolean"},"isLastPage":{"type":"boolean"},"list":{"type":"array","items":{"$ref":"#/definitions/ManagementLog"}},"navigateFirstPage":{"type":"integer","format":"int32"},"navigateLastPage":{"type":"integer","format":"int32"},"navigatePages":{"type":"integer","format":"int32"},"navigatepageNums":{"type":"array","items":{"type":"integer","format":"int32"}},"nextPage":{"type":"integer","format":"int32"},"pageNum":{"type":"integer","format":"int32"},"pageSize":{"type":"integer","format":"int32"},"pages":{"type":"integer","format":"int32"},"prePage":{"type":"integer","format":"int32"},"size":{"type":"integer","format":"int32"},"startRow":{"type":"integer","format":"int64"},"total":{"type":"integer","format":"int64"}},"title":"PageInfo«ManagementLog»"},"PageInfo«UserLog»":{"type":"object","properties":{"endRow":{"type":"integer","format":"int64"},"hasNextPage":{"type":"boolean"},"hasPreviousPage":{"type":"boolean"},"isFirstPage":{"type":"boolean"},"isLastPage":{"type":"boolean"},"list":{"type":"array","items":{"$ref":"#/definitions/UserLog"}},"navigateFirstPage":{"type":"integer","format":"int32"},"navigateLastPage":{"type":"integer","format":"int32"},"navigatePages":{"type":"integer","format":"int32"},"navigatepageNums":{"type":"array","items":{"type":"integer","format":"int32"}},"nextPage":{"type":"integer","format":"int32"},"pageNum":{"type":"integer","format":"int32"},"pageSize":{"type":"integer","format":"int32"},"pages":{"type":"integer","format":"int32"},"prePage":{"type":"integer","format":"int32"},"size":{"type":"integer","format":"int32"},"startRow":{"type":"integer","format":"int64"},"total":{"type":"integer","format":"int64"}},"title":"PageInfo«UserLog»"},"User":{"type":"object","properties":{"balance":{"type":"number"},"id":{"type":"integer","format":"int32"},"identityCard":{"type":"string"},"lastOffComputerTime":{"type":"string","format":"date-time"},"lastOnComputerTime":{"type":"string","format":"date-time"},"loginPassword":{"type":"string"},"machineId":{"type":"integer","format":"int32"},"name":{"type":"string"},"phoneNumber":{"type":"string"},"registerTime":{"type":"string","format":"date-time"},"status":{"type":"string"}},"title":"User"},"UserLog":{"type":"object","properties":{"detail":{"type":"string"},"id":{"type":"integer","format":"int32"},"operation":{"type":"string"},"operationTime":{"type":"string","format":"date-time"},"userId":{"type":"integer","format":"int32"}},"title":"UserLog"},"Zone":{"type":"object","properties":{"id":{"type":"integer","format":"int32"},"name":{"type":"string"}},"title":"Zone"}}}
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "Zone的CRUD接口文档",
+    "version": "1.0",
+    "title": "Zone API文档"
+  },
+  "host": "localhost:8080",
+  "basePath": "/",
+  "tags": [
+    { "name": "区域管理接口", "description": "Zone Controller" },
+    { "name": "商品管理接口", "description": "Commodity Controller" },
+    { "name": "机器管理接口", "description": "Machine Controller" },
+    { "name": "用户日志查询接口", "description": "User Log Controller" },
+    { "name": "用户管理接口", "description": "User Controller" },
+    { "name": "管理员接口", "description": "Admin Controller" },
+    { "name": "管理日志查询接口", "description": "Management Log Controller" },
+    { "name": "订单管理接口", "description": "Order Controller" }
+  ],
+  "paths": {
+    "/api/admin/login": {
+      "post": {
+        "tags": ["管理员接口"],
+        "summary": "管理员登录",
+        "operationId": "loginUsingPOST",
+        "consumes": ["application/json"],
+        "produces": ["application/json;charset=UTF-8"],
+        "parameters": [
+          {
+            "name": "password",
+            "in": "query",
+            "description": "密码",
+            "required": true,
+            "type": "string",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "username",
+            "in": "query",
+            "description": "用户名",
+            "required": true,
+            "type": "string",
+            "allowEmptyValue": false
+          }
+        ],
+        "responses": {
+          "200": { "description": "OK", "schema": { "type": "object" } },
+          "201": { "description": "Created" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/commodities": {
+      "get": {
+        "tags": ["商品管理接口"],
+        "summary": "获取所有商品",
+        "operationId": "getAllCommoditiesUsingGET",
+        "produces": ["*/*"],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/Commodity" }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      },
+      "post": {
+        "tags": ["商品管理接口"],
+        "summary": "创建商品",
+        "operationId": "createCommodityUsingPOST",
+        "consumes": ["application/json"],
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "commodity",
+            "description": "commodity",
+            "required": true,
+            "schema": { "$ref": "#/definitions/Commodity" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "type": "integer", "format": "int32" }
+          },
+          "201": { "description": "Created" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/commodities/search": {
+      "get": {
+        "tags": ["商品管理接口"],
+        "summary": "搜索商品",
+        "operationId": "searchCommoditiesUsingGET",
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "maxPrice",
+            "in": "query",
+            "description": "最高价格",
+            "required": false,
+            "type": "number",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "minPrice",
+            "in": "query",
+            "description": "最低价格",
+            "required": false,
+            "type": "number",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "description": "商品名称",
+            "required": false,
+            "type": "string",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "pageNum",
+            "in": "query",
+            "description": "页码",
+            "required": false,
+            "type": "integer",
+            "default": 1,
+            "format": "int32",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "每页大小",
+            "required": false,
+            "type": "integer",
+            "default": 10,
+            "format": "int32",
+            "allowEmptyValue": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/PageInfo«Commodity»" }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/commodities/{id}": {
+      "get": {
+        "tags": ["商品管理接口"],
+        "summary": "根据ID获取商品",
+        "operationId": "getCommodityByIdUsingGET",
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "商品ID",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/Commodity" }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      },
+      "put": {
+        "tags": ["商品管理接口"],
+        "summary": "更新商品",
+        "operationId": "updateCommodityUsingPUT",
+        "consumes": ["application/json"],
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "commodity",
+            "description": "commodity",
+            "required": true,
+            "schema": { "$ref": "#/definitions/Commodity" }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "商品ID",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "type": "integer", "format": "int32" }
+          },
+          "201": { "description": "Created" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      },
+      "delete": {
+        "tags": ["商品管理接口"],
+        "summary": "删除商品",
+        "operationId": "deleteCommodityUsingDELETE",
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "商品ID",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "type": "integer", "format": "int32" }
+          },
+          "204": { "description": "No Content" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/machines": {
+      "get": {
+        "tags": ["机器管理接口"],
+        "summary": "获取所有机器",
+        "operationId": "getAllMachinesUsingGET",
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "maxPrice",
+            "in": "query",
+            "description": "最高价格",
+            "required": false,
+            "type": "number",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "minPrice",
+            "in": "query",
+            "description": "最低价格",
+            "required": false,
+            "type": "number",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "状态(Abnormal/Idle/Occupied)",
+            "required": false,
+            "type": "string",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "zoneId",
+            "in": "query",
+            "description": "区域ID",
+            "required": false,
+            "type": "integer",
+            "format": "int32",
+            "allowEmptyValue": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/Machine" }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      },
+      "post": {
+        "tags": ["机器管理接口"],
+        "summary": "创建新机器",
+        "operationId": "createMachineUsingPOST",
+        "consumes": ["application/json"],
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "machine",
+            "description": "machine",
+            "required": true,
+            "schema": { "$ref": "#/definitions/Machine" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "type": "integer", "format": "int32" }
+          },
+          "201": { "description": "Created" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/machines/search": {
+      "get": {
+        "tags": ["机器管理接口"],
+        "summary": "搜索机器",
+        "operationId": "searchMachinesUsingGET",
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "maxPrice",
+            "in": "query",
+            "description": "最高价格",
+            "required": false,
+            "type": "number",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "minPrice",
+            "in": "query",
+            "description": "最低价格",
+            "required": false,
+            "type": "number",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "pageNum",
+            "in": "query",
+            "description": "页码",
+            "required": false,
+            "type": "integer",
+            "default": 1,
+            "format": "int32",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "每页大小",
+            "required": false,
+            "type": "integer",
+            "default": 10,
+            "format": "int32",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "状态(Abnormal/Idle/Occupied)",
+            "required": false,
+            "type": "string",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "zoneId",
+            "in": "query",
+            "description": "区域ID",
+            "required": false,
+            "type": "integer",
+            "format": "int32",
+            "allowEmptyValue": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/PageInfo«Machine»" }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/machines/stats": {
+      "get": {
+        "tags": ["机器管理接口"],
+        "summary": "获取机器统计信息",
+        "operationId": "getMachineStatsUsingGET",
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "zoneId",
+            "in": "query",
+            "description": "区域ID",
+            "required": false,
+            "type": "integer",
+            "format": "int32",
+            "allowEmptyValue": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "additionalProperties": { "type": "object" }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/machines/unbound": {
+      "get": {
+        "tags": ["机器管理接口"],
+        "summary": "获取所有未绑定区域的机器",
+        "operationId": "getUnboundMachinesUsingGET",
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "maxPrice",
+            "in": "query",
+            "description": "最高价格",
+            "required": false,
+            "type": "number",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "minPrice",
+            "in": "query",
+            "description": "最低价格",
+            "required": false,
+            "type": "number",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "pageNum",
+            "in": "query",
+            "description": "页码",
+            "required": false,
+            "type": "integer",
+            "default": 1,
+            "format": "int32",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "每页大小",
+            "required": false,
+            "type": "integer",
+            "default": 10,
+            "format": "int32",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "状态(Abnormal/Idle/Occupied)",
+            "required": false,
+            "type": "string",
+            "allowEmptyValue": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/PageInfo«Machine»" }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/machines/zone/{zoneId}": {
+      "get": {
+        "tags": ["机器管理接口"],
+        "summary": "根据区域ID获取机器列表",
+        "operationId": "getMachinesByZoneIdUsingGET",
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "zoneId",
+            "in": "path",
+            "description": "区域ID",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/Machine" }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/machines/{id}": {
+      "get": {
+        "tags": ["机器管理接口"],
+        "summary": "根据ID获取机器",
+        "operationId": "getMachineByIdUsingGET",
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "机器ID",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/Machine" }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      },
+      "put": {
+        "tags": ["机器管理接口"],
+        "summary": "更新机器信息",
+        "operationId": "updateMachineUsingPUT",
+        "consumes": ["application/json"],
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "机器ID",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "in": "body",
+            "name": "machine",
+            "description": "machine",
+            "required": true,
+            "schema": { "$ref": "#/definitions/Machine" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "additionalProperties": { "type": "object" }
+            }
+          },
+          "201": { "description": "Created" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      },
+      "delete": {
+        "tags": ["机器管理接口"],
+        "summary": "删除机器",
+        "operationId": "deleteMachineUsingDELETE",
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "机器ID",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "type": "integer", "format": "int32" }
+          },
+          "204": { "description": "No Content" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/managementlogs": {
+      "get": {
+        "tags": ["管理日志查询接口"],
+        "summary": "条件查询管理日志",
+        "operationId": "getManagementLogsUsingGET",
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "adminId",
+            "in": "query",
+            "description": "管理员ID",
+            "required": false,
+            "type": "integer",
+            "format": "int32",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "endTime",
+            "in": "query",
+            "description": "结束时间",
+            "required": false,
+            "type": "string",
+            "format": "date-time",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "operation",
+            "in": "query",
+            "description": "操作类型",
+            "required": false,
+            "type": "string",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "pageNum",
+            "in": "query",
+            "description": "页码",
+            "required": false,
+            "type": "integer",
+            "default": 1,
+            "format": "int32",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "每页大小",
+            "required": false,
+            "type": "integer",
+            "default": 10,
+            "format": "int32",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "startTime",
+            "in": "query",
+            "description": "开始时间",
+            "required": false,
+            "type": "string",
+            "format": "date-time",
+            "allowEmptyValue": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/PageInfo«ManagementLog»" }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/orders": {
+      "post": {
+        "tags": ["订单管理接口"],
+        "summary": "创建新订单",
+        "operationId": "createOrderUsingPOST",
+        "consumes": ["application/json"],
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "createOrderDTO",
+            "description": "createOrderDTO",
+            "required": true,
+            "schema": { "$ref": "#/definitions/CreateOrderDTO" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "additionalProperties": { "type": "object" }
+            }
+          },
+          "201": { "description": "Created" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/orders/search": {
+      "get": {
+        "tags": ["订单管理接口"],
+        "summary": "搜索订单",
+        "operationId": "searchOrdersUsingGET",
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "commodityName",
+            "in": "query",
+            "description": "商品名称",
+            "required": false,
+            "type": "string",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "结束日期",
+            "required": false,
+            "type": "string",
+            "format": "date-time",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "machineId",
+            "in": "query",
+            "description": "机器ID",
+            "required": false,
+            "type": "integer",
+            "format": "int32",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "pageNum",
+            "in": "query",
+            "description": "页码",
+            "required": false,
+            "type": "integer",
+            "default": 1,
+            "format": "int32",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "每页大小",
+            "required": false,
+            "type": "integer",
+            "default": 10,
+            "format": "int32",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "开始日期",
+            "required": false,
+            "type": "string",
+            "format": "date-time",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "订单状态",
+            "required": false,
+            "type": "string",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "userId",
+            "in": "query",
+            "description": "用户ID",
+            "required": false,
+            "type": "integer",
+            "format": "int32",
+            "allowEmptyValue": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/PageInfo«Order»" }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/orders/{id}": {
+      "get": {
+        "tags": ["订单管理接口"],
+        "summary": "获取订单详情",
+        "operationId": "getOrderByIdUsingGET",
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/Order" }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      },
+      "delete": {
+        "tags": ["订单管理接口"],
+        "summary": "删除订单",
+        "operationId": "deleteOrderUsingDELETE",
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "additionalProperties": { "type": "object" }
+            }
+          },
+          "204": { "description": "No Content" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/orders/{id}/status": {
+      "put": {
+        "tags": ["订单管理接口"],
+        "summary": "更新订单状态",
+        "operationId": "updateOrderStatusUsingPUT",
+        "consumes": ["application/json"],
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "status",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "additionalProperties": { "type": "object" }
+            }
+          },
+          "201": { "description": "Created" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/userlogs": {
+      "get": {
+        "tags": ["用户日志查询接口"],
+        "summary": "条件查询用户日志",
+        "operationId": "getUserLogsUsingGET",
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "endTime",
+            "in": "query",
+            "description": "结束时间",
+            "required": false,
+            "type": "string",
+            "format": "date-time",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "operation",
+            "in": "query",
+            "description": "操作类型",
+            "required": false,
+            "type": "string",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "pageNum",
+            "in": "query",
+            "description": "页码",
+            "required": false,
+            "type": "integer",
+            "default": 1,
+            "format": "int32",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "每页大小",
+            "required": false,
+            "type": "integer",
+            "default": 10,
+            "format": "int32",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "startTime",
+            "in": "query",
+            "description": "开始时间",
+            "required": false,
+            "type": "string",
+            "format": "date-time",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "userId",
+            "in": "query",
+            "description": "用户ID",
+            "required": false,
+            "type": "integer",
+            "format": "int32",
+            "allowEmptyValue": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/PageInfo«UserLog»" }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/users": {
+      "get": {
+        "tags": ["用户管理接口"],
+        "summary": "获取所有用户",
+        "operationId": "getAllUsersUsingGET",
+        "produces": ["*/*"],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/User" }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      },
+      "post": {
+        "tags": ["用户管理接口"],
+        "summary": "创建新用户",
+        "operationId": "createUserUsingPOST",
+        "consumes": ["application/json"],
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "user",
+            "description": "user",
+            "required": true,
+            "schema": { "$ref": "#/definitions/User" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "type": "integer", "format": "int32" }
+          },
+          "201": { "description": "Created" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/users/login": {
+      "post": {
+        "tags": ["用户管理接口"],
+        "summary": "用户登录",
+        "operationId": "loginUsingPOST_1",
+        "consumes": ["application/json"],
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "loginDTO",
+            "description": "loginDTO",
+            "required": true,
+            "schema": { "$ref": "#/definitions/UserLoginDTO" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/UserLoginResponse" }
+          },
+          "201": { "description": "Created" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/users/search": {
+      "get": {
+        "tags": ["用户管理接口"],
+        "summary": "搜索用户",
+        "operationId": "searchUsersUsingGET",
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "关键字",
+            "required": false,
+            "type": "string",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "maxBalance",
+            "in": "query",
+            "description": "最大余额",
+            "required": false,
+            "type": "number",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "minBalance",
+            "in": "query",
+            "description": "最小余额",
+            "required": false,
+            "type": "number",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "pageNum",
+            "in": "query",
+            "description": "页码",
+            "required": false,
+            "type": "integer",
+            "default": 1,
+            "format": "int32",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "每页大小",
+            "required": false,
+            "type": "integer",
+            "default": 10,
+            "format": "int32",
+            "allowEmptyValue": false
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "用户状态",
+            "required": false,
+            "type": "string",
+            "allowEmptyValue": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/PageInfo«User»" }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/users/stats": {
+      "get": {
+        "tags": ["用户管理接口"],
+        "summary": "获取用户统计信息",
+        "operationId": "getUserStatsUsingGET",
+        "produces": ["*/*"],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "additionalProperties": { "type": "object" }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/users/{id}": {
+      "get": {
+        "tags": ["用户管理接口"],
+        "summary": "根据ID获取用户",
+        "operationId": "getUserByIdUsingGET",
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/User" }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      },
+      "put": {
+        "tags": ["用户管理接口"],
+        "summary": "更新用户信息",
+        "operationId": "updateUserUsingPUT",
+        "consumes": ["application/json"],
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "in": "body",
+            "name": "user",
+            "description": "user",
+            "required": true,
+            "schema": { "$ref": "#/definitions/User" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "type": "integer", "format": "int32" }
+          },
+          "201": { "description": "Created" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      },
+      "delete": {
+        "tags": ["用户管理接口"],
+        "summary": "删除用户",
+        "operationId": "deleteUserUsingDELETE",
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "type": "integer", "format": "int32" }
+          },
+          "204": { "description": "No Content" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/users/{userId}/start/{machineId}": {
+      "post": {
+        "tags": ["用户管理接口"],
+        "summary": "用户上机",
+        "operationId": "startUsingComputerUsingPOST",
+        "consumes": ["application/json"],
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "machineId",
+            "in": "path",
+            "description": "机器ID",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "用户ID",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "additionalProperties": { "type": "object" }
+            }
+          },
+          "201": { "description": "Created" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/users/{userId}/stop": {
+      "post": {
+        "tags": ["用户管理接口"],
+        "summary": "用户下机",
+        "operationId": "stopUsingComputerUsingPOST",
+        "consumes": ["application/json"],
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "用户ID",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "additionalProperties": { "type": "object" }
+            }
+          },
+          "201": { "description": "Created" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/zones": {
+      "get": {
+        "tags": ["区域管理接口"],
+        "summary": "获取所有区域",
+        "operationId": "getAllZonesUsingGET",
+        "produces": ["*/*"],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/Zone" }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      },
+      "post": {
+        "tags": ["区域管理接口"],
+        "summary": "创建新区域",
+        "operationId": "createZoneUsingPOST",
+        "consumes": ["application/json"],
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "zone",
+            "description": "zone",
+            "required": true,
+            "schema": { "$ref": "#/definitions/Zone" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "additionalProperties": { "type": "string" }
+            }
+          },
+          "201": { "description": "Created" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/zones/check/{name}": {
+      "get": {
+        "tags": ["区域管理接口"],
+        "summary": "检查区域名称是否已存在",
+        "operationId": "checkZoneNameUsingGET",
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "additionalProperties": { "type": "object" }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      }
+    },
+    "/api/zones/{id}": {
+      "get": {
+        "tags": ["区域管理接口"],
+        "summary": "根据ID获取区域",
+        "operationId": "getZoneByIdUsingGET",
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/Zone" }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      },
+      "put": {
+        "tags": ["区域管理接口"],
+        "summary": "更新区域信息",
+        "operationId": "updateZoneUsingPUT",
+        "consumes": ["application/json"],
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "in": "body",
+            "name": "zone",
+            "description": "zone",
+            "required": true,
+            "schema": { "$ref": "#/definitions/Zone" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "additionalProperties": { "type": "string" }
+            }
+          },
+          "201": { "description": "Created" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found" }
+        },
+        "deprecated": false
+      },
+      "delete": {
+        "tags": ["区域管理接口"],
+        "summary": "删除区域",
+        "operationId": "deleteZoneUsingDELETE",
+        "produces": ["*/*"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "id",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "additionalProperties": { "type": "string" }
+            }
+          },
+          "204": { "description": "No Content" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" }
+        },
+        "deprecated": false
+      }
+    }
+  },
+  "definitions": {
+    "Commodity": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "integer", "format": "int32" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "stock": { "type": "integer", "format": "int32" },
+        "unit": { "type": "string" }
+      },
+      "title": "Commodity"
+    },
+    "CreateOrderDTO": {
+      "type": "object",
+      "properties": {
+        "commodities": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/OrderCommodityDTO" }
+        },
+        "machineId": { "type": "integer", "format": "int32" },
+        "totalPrice": { "type": "number" },
+        "userId": { "type": "integer", "format": "int32" }
+      },
+      "title": "CreateOrderDTO"
+    },
+    "Machine": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "integer", "format": "int32" },
+        "onlineUserId": { "type": "integer", "format": "int32" },
+        "price": { "type": "number", "format": "double" },
+        "status": { "type": "string" },
+        "zoneId": { "type": "integer", "format": "int32" }
+      },
+      "title": "Machine"
+    },
+    "ManagementLog": {
+      "type": "object",
+      "properties": {
+        "adminId": { "type": "integer", "format": "int32" },
+        "detail": { "type": "string" },
+        "id": { "type": "integer", "format": "int32" },
+        "operation": { "type": "string" },
+        "operationTime": { "type": "string", "format": "date-time" }
+      },
+      "title": "ManagementLog"
+    },
+    "Order": {
+      "type": "object",
+      "properties": {
+        "commodities": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/OrderCommodity" }
+        },
+        "id": { "type": "integer", "format": "int32" },
+        "machineId": { "type": "integer", "format": "int32" },
+        "orderDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string" },
+        "totalPrice": { "type": "number" },
+        "userId": { "type": "integer", "format": "int32" }
+      },
+      "title": "Order"
+    },
+    "OrderCommodity": {
+      "type": "object",
+      "properties": {
+        "commodityId": { "type": "integer", "format": "int32" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "quantity": { "type": "integer", "format": "int32" }
+      },
+      "title": "OrderCommodity"
+    },
+    "OrderCommodityDTO": {
+      "type": "object",
+      "properties": {
+        "commodityId": { "type": "integer", "format": "int32" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "quantity": { "type": "integer", "format": "int32" }
+      },
+      "title": "OrderCommodityDTO"
+    },
+    "PageInfo«Commodity»": {
+      "type": "object",
+      "properties": {
+        "endRow": { "type": "integer", "format": "int64" },
+        "hasNextPage": { "type": "boolean" },
+        "hasPreviousPage": { "type": "boolean" },
+        "isFirstPage": { "type": "boolean" },
+        "isLastPage": { "type": "boolean" },
+        "list": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Commodity" }
+        },
+        "navigateFirstPage": { "type": "integer", "format": "int32" },
+        "navigateLastPage": { "type": "integer", "format": "int32" },
+        "navigatePages": { "type": "integer", "format": "int32" },
+        "navigatepageNums": {
+          "type": "array",
+          "items": { "type": "integer", "format": "int32" }
+        },
+        "nextPage": { "type": "integer", "format": "int32" },
+        "pageNum": { "type": "integer", "format": "int32" },
+        "pageSize": { "type": "integer", "format": "int32" },
+        "pages": { "type": "integer", "format": "int32" },
+        "prePage": { "type": "integer", "format": "int32" },
+        "size": { "type": "integer", "format": "int32" },
+        "startRow": { "type": "integer", "format": "int64" },
+        "total": { "type": "integer", "format": "int64" }
+      },
+      "title": "PageInfo«Commodity»"
+    },
+    "PageInfo«Machine»": {
+      "type": "object",
+      "properties": {
+        "endRow": { "type": "integer", "format": "int64" },
+        "hasNextPage": { "type": "boolean" },
+        "hasPreviousPage": { "type": "boolean" },
+        "isFirstPage": { "type": "boolean" },
+        "isLastPage": { "type": "boolean" },
+        "list": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Machine" }
+        },
+        "navigateFirstPage": { "type": "integer", "format": "int32" },
+        "navigateLastPage": { "type": "integer", "format": "int32" },
+        "navigatePages": { "type": "integer", "format": "int32" },
+        "navigatepageNums": {
+          "type": "array",
+          "items": { "type": "integer", "format": "int32" }
+        },
+        "nextPage": { "type": "integer", "format": "int32" },
+        "pageNum": { "type": "integer", "format": "int32" },
+        "pageSize": { "type": "integer", "format": "int32" },
+        "pages": { "type": "integer", "format": "int32" },
+        "prePage": { "type": "integer", "format": "int32" },
+        "size": { "type": "integer", "format": "int32" },
+        "startRow": { "type": "integer", "format": "int64" },
+        "total": { "type": "integer", "format": "int64" }
+      },
+      "title": "PageInfo«Machine»"
+    },
+    "PageInfo«ManagementLog»": {
+      "type": "object",
+      "properties": {
+        "endRow": { "type": "integer", "format": "int64" },
+        "hasNextPage": { "type": "boolean" },
+        "hasPreviousPage": { "type": "boolean" },
+        "isFirstPage": { "type": "boolean" },
+        "isLastPage": { "type": "boolean" },
+        "list": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/ManagementLog" }
+        },
+        "navigateFirstPage": { "type": "integer", "format": "int32" },
+        "navigateLastPage": { "type": "integer", "format": "int32" },
+        "navigatePages": { "type": "integer", "format": "int32" },
+        "navigatepageNums": {
+          "type": "array",
+          "items": { "type": "integer", "format": "int32" }
+        },
+        "nextPage": { "type": "integer", "format": "int32" },
+        "pageNum": { "type": "integer", "format": "int32" },
+        "pageSize": { "type": "integer", "format": "int32" },
+        "pages": { "type": "integer", "format": "int32" },
+        "prePage": { "type": "integer", "format": "int32" },
+        "size": { "type": "integer", "format": "int32" },
+        "startRow": { "type": "integer", "format": "int64" },
+        "total": { "type": "integer", "format": "int64" }
+      },
+      "title": "PageInfo«ManagementLog»"
+    },
+    "PageInfo«Order»": {
+      "type": "object",
+      "properties": {
+        "endRow": { "type": "integer", "format": "int64" },
+        "hasNextPage": { "type": "boolean" },
+        "hasPreviousPage": { "type": "boolean" },
+        "isFirstPage": { "type": "boolean" },
+        "isLastPage": { "type": "boolean" },
+        "list": { "type": "array", "items": { "$ref": "#/definitions/Order" } },
+        "navigateFirstPage": { "type": "integer", "format": "int32" },
+        "navigateLastPage": { "type": "integer", "format": "int32" },
+        "navigatePages": { "type": "integer", "format": "int32" },
+        "navigatepageNums": {
+          "type": "array",
+          "items": { "type": "integer", "format": "int32" }
+        },
+        "nextPage": { "type": "integer", "format": "int32" },
+        "pageNum": { "type": "integer", "format": "int32" },
+        "pageSize": { "type": "integer", "format": "int32" },
+        "pages": { "type": "integer", "format": "int32" },
+        "prePage": { "type": "integer", "format": "int32" },
+        "size": { "type": "integer", "format": "int32" },
+        "startRow": { "type": "integer", "format": "int64" },
+        "total": { "type": "integer", "format": "int64" }
+      },
+      "title": "PageInfo«Order»"
+    },
+    "PageInfo«UserLog»": {
+      "type": "object",
+      "properties": {
+        "endRow": { "type": "integer", "format": "int64" },
+        "hasNextPage": { "type": "boolean" },
+        "hasPreviousPage": { "type": "boolean" },
+        "isFirstPage": { "type": "boolean" },
+        "isLastPage": { "type": "boolean" },
+        "list": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/UserLog" }
+        },
+        "navigateFirstPage": { "type": "integer", "format": "int32" },
+        "navigateLastPage": { "type": "integer", "format": "int32" },
+        "navigatePages": { "type": "integer", "format": "int32" },
+        "navigatepageNums": {
+          "type": "array",
+          "items": { "type": "integer", "format": "int32" }
+        },
+        "nextPage": { "type": "integer", "format": "int32" },
+        "pageNum": { "type": "integer", "format": "int32" },
+        "pageSize": { "type": "integer", "format": "int32" },
+        "pages": { "type": "integer", "format": "int32" },
+        "prePage": { "type": "integer", "format": "int32" },
+        "size": { "type": "integer", "format": "int32" },
+        "startRow": { "type": "integer", "format": "int64" },
+        "total": { "type": "integer", "format": "int64" }
+      },
+      "title": "PageInfo«UserLog»"
+    },
+    "PageInfo«User»": {
+      "type": "object",
+      "properties": {
+        "endRow": { "type": "integer", "format": "int64" },
+        "hasNextPage": { "type": "boolean" },
+        "hasPreviousPage": { "type": "boolean" },
+        "isFirstPage": { "type": "boolean" },
+        "isLastPage": { "type": "boolean" },
+        "list": { "type": "array", "items": { "$ref": "#/definitions/User" } },
+        "navigateFirstPage": { "type": "integer", "format": "int32" },
+        "navigateLastPage": { "type": "integer", "format": "int32" },
+        "navigatePages": { "type": "integer", "format": "int32" },
+        "navigatepageNums": {
+          "type": "array",
+          "items": { "type": "integer", "format": "int32" }
+        },
+        "nextPage": { "type": "integer", "format": "int32" },
+        "pageNum": { "type": "integer", "format": "int32" },
+        "pageSize": { "type": "integer", "format": "int32" },
+        "pages": { "type": "integer", "format": "int32" },
+        "prePage": { "type": "integer", "format": "int32" },
+        "size": { "type": "integer", "format": "int32" },
+        "startRow": { "type": "integer", "format": "int64" },
+        "total": { "type": "integer", "format": "int64" }
+      },
+      "title": "PageInfo«User»"
+    },
+    "User": {
+      "type": "object",
+      "properties": {
+        "balance": { "type": "number" },
+        "balanceWarningThreshold": { "type": "number" },
+        "id": { "type": "integer", "format": "int32" },
+        "identityCard": { "type": "string" },
+        "lastOffComputerTime": { "type": "string", "format": "date-time" },
+        "lastOnComputerTime": { "type": "string", "format": "date-time" },
+        "loginPassword": { "type": "string" },
+        "machineId": { "type": "integer", "format": "int32" },
+        "name": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "registerTime": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["Offline", "Online", "Banned"] },
+        "username": { "type": "string" }
+      },
+      "title": "User"
+    },
+    "UserLog": {
+      "type": "object",
+      "properties": {
+        "detail": { "type": "string" },
+        "id": { "type": "integer", "format": "int32" },
+        "operation": { "type": "string" },
+        "operationTime": { "type": "string", "format": "date-time" },
+        "userId": { "type": "integer", "format": "int32" }
+      },
+      "title": "UserLog"
+    },
+    "UserLoginDTO": {
+      "type": "object",
+      "properties": {
+        "identityCard": { "type": "string" },
+        "machineId": { "type": "integer", "format": "int32" },
+        "password": { "type": "string" },
+        "phoneNumber": { "type": "string" }
+      },
+      "title": "UserLoginDTO"
+    },
+    "UserLoginResponse": {
+      "type": "object",
+      "properties": {
+        "message": { "type": "string" },
+        "token": { "type": "string" },
+        "user": { "$ref": "#/definitions/User" }
+      },
+      "title": "UserLoginResponse"
+    },
+    "Zone": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "integer", "format": "int32" },
+        "name": { "type": "string" }
+      },
+      "title": "Zone"
+    }
+  }
+}
