@@ -98,6 +98,14 @@ styles/                  # 样式文件
 └── globals.css         # 全局样式
 ```
 
+## 样式配置
+
+项目使用了全局样式文件 `styles/globals.css`，该文件包含：
+- Tailwind CSS 的基础配置
+- 全局颜色变量设置
+- 响应式深色模式支持
+- 基础样式设置
+
 ## API 配置
 
 API 相关配置位于 `lib/api-config.ts`，包含：

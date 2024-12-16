@@ -29,6 +29,16 @@ type Order = {
   machineZoneId: number
 }
 
+// 添加 Message 类型定义
+type Message = {
+  id: number
+  content: string
+  userId: number | null
+  machineId: number | null
+  status: string
+  time: string
+}
+
 // 动态导入 DynamicClock 组件并禁用 SSR
 const DynamicClockComponent = dynamic(() => import('@/components/dynamic-clock').then(mod => mod.DynamicClock), {
   ssr: false
@@ -37,8 +47,9 @@ const DynamicClockComponent = dynamic(() => import('@/components/dynamic-clock')
 export default function AdminDashboardPage() {
   const router = useRouter()
   const { isAuthenticated } = useAdminAuth()
-  const [messages, setMessages] = useState<string[]>([])
+  const [messages, setMessages] = useState<Message[]>([])
   const [pendingOrders, setPendingOrders] = useState<Order[]>([])
+  const [totalPendingCount, setTotalPendingCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [machineZones, setMachineZones] = useState<Map<number, string>>(new Map())
   const [userNames, setUserNames] = useState<Map<number, string>>(new Map())
@@ -73,36 +84,35 @@ export default function AdminDashboardPage() {
     }
   }
 
-  // 修改获取订单的函数，添加获取用户信息的逻辑
+  // 获取待处理订单
   const fetchPendingOrders = async () => {
     try {
-      setIsLoading(true)
-      const params = new URLSearchParams({
-        status: 'Pending',
-        pageNum: '1',
-        pageSize: '10'
-      })
-      
-      const response = await fetch(`${API_URL}${API_ENDPOINTS.ORDERS}/search?${params}`)
-      if (!response.ok) throw new Error('获取订单失败')
-      
+      const response = await fetch(`${API_URL}${API_ENDPOINTS.ORDERS}/search?status=Pending`)
+      if (!response.ok) throw new Error('获取待处理订单失败')
       const data = await response.json()
       setPendingOrders(data.list || [])
-      
-      // 获取每个订单对应的用户信息和机器区域信息
-      for (const order of data.list || []) {
-        fetchUserName(order.userId)
-        fetchMachineZone(order.machineId)
-      }
+      updateTotalPendingCount(data.list?.length || 0, messages.length)
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "错误",
-        description: error instanceof Error ? error.message : "获取订单失败"
-      })
-    } finally {
-      setIsLoading(false)
+      console.error('获取待处理订单失败:', error)
     }
+  }
+
+  // 获取待处理消息
+  const fetchPendingMessages = async () => {
+    try {
+      const response = await fetch(`${API_URL}${API_ENDPOINTS.PENDING_MESSAGES}`)
+      if (!response.ok) throw new Error('获取待处理消息失败')
+      const data = await response.json()
+      setMessages(data || [])
+      updateTotalPendingCount(pendingOrders.length, data.length)
+    } catch (error) {
+      console.error('获取待处理消息失败:', error)
+    }
+  }
+
+  // 更新总待办数
+  const updateTotalPendingCount = (ordersCount: number, messagesCount: number) => {
+    setTotalPendingCount(ordersCount + messagesCount)
   }
 
   // 处理订单
@@ -140,6 +150,36 @@ export default function AdminDashboardPage() {
     }
   }
 
+  // 添加处理消息的函数
+  const handleMessage = async (messageId: number) => {
+    try {
+      const response = await fetch(`${API_URL}${API_ENDPOINTS.MESSAGES}/${messageId}/status?status=Finish`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('处理消息失败')
+      }
+
+      toast({
+        title: "成功",
+        description: "消息已处理"
+      })
+
+      // 刷新消息列表
+      fetchPendingMessages()
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: error instanceof Error ? error.message : "处理消息失败"
+      })
+    }
+  }
+
   // 保持现有的认证检查和消息获取逻辑
   useEffect(() => {
     if (!isAuthenticated) {
@@ -147,14 +187,18 @@ export default function AdminDashboardPage() {
     }
   }, [isAuthenticated, router])
 
-  // 修改轮询间隔为 3 秒
+  // 定时轮询
   useEffect(() => {
     if (isAuthenticated) {
       // 初始加载
       fetchPendingOrders()
+      fetchPendingMessages()
       
       // 每3秒轮询一次
-      const interval = setInterval(fetchPendingOrders, 3000)
+      const interval = setInterval(() => {
+        fetchPendingOrders()
+        fetchPendingMessages()
+      }, 3000)
       
       return () => clearInterval(interval)
     }
@@ -172,8 +216,15 @@ export default function AdminDashboardPage() {
         <DynamicClockComponent />
       </div>
 
+      {/* 添加悬浮球 */}
+      {totalPendingCount > 0 && (
+        <div className="fixed bottom-4 right-4 bg-red-500 text-white rounded-full w-16 h-16 flex items-center justify-center cursor-pointer shadow-lg">
+          {totalPendingCount}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* 订单管理卡片 */}
+        {/* 订单管理卡片保持不变 */}
         <Card>
           <CardHeader>
             <CardTitle>待处理订单</CardTitle>
@@ -228,22 +279,38 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* 保持现有的用户消息卡片 */}
+        {/* 修改待办消息卡片，添加处理按钮 */}
         <Card>
           <CardHeader>
-            <CardTitle>用户消息</CardTitle>
+            <CardTitle>待办消息</CardTitle>
           </CardHeader>
           <CardContent>
             {messages.length === 0 ? (
-              <p className="text-center text-muted-foreground">暂无消息</p>
+              <p className="text-center text-muted-foreground">暂无待办消息</p>
             ) : (
-              <ul className="space-y-2">
-                {messages.map((message, index) => (
-                  <li key={index} className="p-2 border rounded">
-                    {message}
-                  </li>
+              <div className="space-y-4">
+                {messages.map((message) => (
+                  <div key={message.id} className="p-4 border rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                      <Badge>
+                        {message.userId ? "用户消息" : "系统提示"}
+                      </Badge>
+                      <span className="text-sm text-gray-500">
+                        {new Date(message.time).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="mb-4">{message.content}</p>
+                    <div className="flex justify-end">
+                      <Button
+                        size="sm"
+                        onClick={() => handleMessage(message.id)}
+                      >
+                        处理
+                      </Button>
+                    </div>
+                  </div>
                 ))}
-              </ul>
+              </div>
             )}
           </CardContent>
         </Card>

@@ -41,4 +41,8 @@ export const API_ENDPOINTS = {
   ORDERS: '/api/orders',
   ORDERS_SEARCH: '/api/orders/search',
   ORDER_STATUS: (id: number) => `/api/orders/${id}/status`,
+  
+  // 消息相关接口
+  MESSAGES: '/api/messages',
+  PENDING_MESSAGES: '/api/messages/pending',
 } 

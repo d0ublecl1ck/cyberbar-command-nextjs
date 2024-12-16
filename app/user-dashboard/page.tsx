@@ -72,6 +72,13 @@ type Order = {
   commodities: OrderCommodity[]
 }
 
+type Machine = {
+  id: number
+  status: string
+  price: number
+  zoneId: number | null
+}
+
 export default function UserDashboard() {
   const [user, setUser] = useState<User | null>(null)
   const [commodities, setCommodities] = useState<Commodity[]>([])
@@ -86,6 +93,9 @@ export default function UserDashboard() {
   const router = useRouter()
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
+  const [isCallingAdmin, setIsCallingAdmin] = useState(false)
+  const [currentMessageId, setCurrentMessageId] = useState<number | null>(null)
+  const [currentMachine, setCurrentMachine] = useState<Machine | null>(null)
 
   // 获取用户信息
   const fetchUserInfo = async () => {
@@ -116,6 +126,17 @@ export default function UserDashboard() {
         ...data,
         machineId: machineIdFromCookie ? parseInt(machineIdFromCookie) : null
       })
+
+      // 如果用户有绑定机器，获取机器信息
+      if (data.machineId) {
+        const machineResponse = await fetch(`${API_URL}${API_ENDPOINTS.MACHINES}/${data.machineId}`)
+        if (machineResponse.ok) {
+          const machineData = await machineResponse.json()
+          setCurrentMachine(machineData)
+        }
+      } else {
+        setCurrentMachine(null)
+      }
     } catch (error) {
       toast({
         variant: "destructive",
@@ -191,20 +212,87 @@ export default function UserDashboard() {
     setFilteredCommodities(filtered)
   }, [commodities, searchTerm])
 
-  const handleCallAdmin = () => {
-    setAdminCallStatus('calling')
-    toast({
-      title: "呼叫网管",
-      description: "已通知网管，请稍等。",
-    })
+  const handleCallAdmin = async () => {
+    try {
+      if (!user || !user.machineId) {
+        toast({
+          variant: "destructive",
+          title: "错误",
+          description: "未找到用户信息或机器信息"
+        })
+        return
+      }
+
+      setIsCallingAdmin(true)
+
+      // 创建呼叫消息
+      const message = {
+        content: `用户：${user.name} 在 ${user.machineId} 号机呼叫管理员`,
+        userId: user.id,
+        machineId: user.machineId,
+        status: 'Pending'
+      }
+
+      const response = await fetch(`${API_URL}${API_ENDPOINTS.MESSAGES}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(message)
+      })
+
+      if (!response.ok) {
+        throw new Error('呼叫管理员失败')
+      }
+
+      const data = await response.json()
+      setCurrentMessageId(data) // 保存消息ID用于后续取消呼叫
+
+      toast({
+        title: "成功",
+        description: "已呼叫管理员，请稍候"
+      })
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: error instanceof Error ? error.message : "呼叫管理员失败"
+      })
+      setIsCallingAdmin(false)
+    }
   }
 
-  const handleCancelAdminCall = () => {
-    setAdminCallStatus('idle')
-    toast({
-      title: "取消呼叫",
-      description: "已取消网管呼叫。",
-    })
+  const handleCancelCallAdmin = async () => {
+    try {
+      if (!currentMessageId) {
+        throw new Error('未找到呼叫记录')
+      }
+
+      const response = await fetch(`${API_URL}${API_ENDPOINTS.MESSAGES}/${currentMessageId}/status?status=Finish`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('取消呼叫失败')
+      }
+
+      setIsCallingAdmin(false)
+      setCurrentMessageId(null)
+
+      toast({
+        title: "成功",
+        description: "已取消呼叫"
+      })
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: error instanceof Error ? error.message : "取消呼叫失败"
+      })
+    }
   }
 
   const handleStartMachine = async () => {
@@ -234,6 +322,15 @@ export default function UserDashboard() {
       }
       setUser(updatedUser)
       
+      // 获取最新的机器信息
+      if (user.machineId) {
+        const machineResponse = await fetch(`${API_URL}${API_ENDPOINTS.MACHINES}/${user.machineId}`)
+        if (machineResponse.ok) {
+          const machineData = await machineResponse.json()
+          setCurrentMachine(machineData)
+        }
+      }
+      
       toast({
         title: "成功",
         description: "已成功上机。",
@@ -259,6 +356,16 @@ export default function UserDashboard() {
       return
     }
 
+    // 添加呼叫状态检查
+    if (isCallingAdmin) {
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: "您当前正在呼叫管理员，请先取消呼叫后再下机。",
+      })
+      return
+    }
+
     try {
       setIsOrdering(true)
       const response = await fetch(`${API_URL}/api/users/${user.id}/stop`, {
@@ -268,14 +375,18 @@ export default function UserDashboard() {
         }
       })
       
-      if (!response.ok) throw new Error('下机失败')
+      // 获取错误信息
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.message || '下机失败')
+      }
       
       // 清除 cookie
       document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT'
       document.cookie = 'userId=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT'
       document.cookie = 'machineId=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT'
       
-      // 跳转到登录页
       router.push('/login')
       
       toast({
@@ -285,8 +396,8 @@ export default function UserDashboard() {
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "错��",
-        description: error instanceof Error ? error.message : "下机失败",
+        title: "下机失败",
+        description: error instanceof Error ? error.message : "请检查是否有未完成的操作",
       })
     } finally {
       setIsOrdering(false)
@@ -409,6 +520,78 @@ export default function UserDashboard() {
   // 计算总页数
   const totalPages = Math.ceil(filteredCommodities.length / itemsPerPage)
 
+  // 检查是否存在未处理的呼叫消息
+  const checkCallStatus = async (userId: number) => {
+    try {
+      const response = await fetch(`${API_URL}${API_ENDPOINTS.MESSAGES}/user/${userId}`)
+      if (!response.ok) throw new Error('获取消息失败')
+      const messages = await response.json()
+      
+      // 检查是否存在未处理的呼叫消息
+      const hasPendingCall = messages.some((message: any) => 
+        message.status === 'Pending' && 
+        message.content.includes('呼叫管理员')
+      )
+      
+      setIsCallingAdmin(hasPendingCall)
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: error instanceof Error ? error.message : "获取呼叫状态失败"
+      })
+    }
+  }
+
+  // 取消呼叫
+  const cancelCall = async () => {
+    try {
+      const response = await fetch(`${API_URL}${API_ENDPOINTS.MESSAGES}/user/${user?.id}`)
+      if (!response.ok) throw new Error('获取消息失败')
+      const messages = await response.json()
+      
+      // 找到未处理的呼叫消息
+      const pendingCall = messages.find((message: any) => 
+        message.status === 'Pending' && 
+        message.content.includes('呼叫管理员')
+      )
+      
+      if (pendingCall) {
+        // 更新消息状态为 Finish
+        const updateResponse = await fetch(
+          `${API_URL}${API_ENDPOINTS.MESSAGES}/${pendingCall.id}/status?status=Finish`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          }
+        )
+        
+        if (!updateResponse.ok) throw new Error('取消呼叫失败')
+        
+        setIsCallingAdmin(false)
+        toast({
+          title: "成功",
+          description: "已取消呼叫管理员"
+        })
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "错误",
+        description: error instanceof Error ? error.message : "取消呼叫失败"
+      })
+    }
+  }
+
+  // 在组件加载和用户变化时检查呼叫状态
+  useEffect(() => {
+    if (user?.id) {
+      checkCallStatus(user.id)
+    }
+  }, [user])
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -434,15 +617,13 @@ export default function UserDashboard() {
               </p>
               <p><span className="font-medium">当前使用机器：</span>{user?.machineId || '未分配'}</p>
               <div className="flex gap-2 mt-4">
-                {adminCallStatus === 'calling' ? (
-                  <Button variant="destructive" onClick={handleCancelAdminCall} className="flex-1">
-                    取消呼叫网管
-                  </Button>
-                ) : (
-                  <Button onClick={handleCallAdmin} className="flex-1">
-                    呼叫网管
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  onClick={isCallingAdmin ? cancelCall : handleCallAdmin}
+                  disabled={isLoading}
+                >
+                  {isCallingAdmin ? "取消呼叫" : "呼叫管理员"}
+                </Button>
                 {user?.status !== 'Online' ? (
                   <Button onClick={handleStartMachine} disabled={isOrdering} className="flex-1">
                     上机
@@ -459,11 +640,11 @@ export default function UserDashboard() {
 
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle>待处理订单</CardTitle>
+            <CardTitle>我的订单</CardTitle>
           </CardHeader>
           <CardContent>
             {pendingOrders.length === 0 ? (
-              <p className="text-center text-muted-foreground">暂无待处理订单</p>
+              <p className="text-center text-muted-foreground">暂无订单</p>
             ) : (
               <div className="space-y-4">
                 {pendingOrders.map((order) => (
@@ -561,7 +742,7 @@ export default function UserDashboard() {
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
                 >
-                  ��一页
+                  上一页
                 </Button>
                 <span className="text-sm">
                   第 {currentPage} 页，共 {totalPages} 页

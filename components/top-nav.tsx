@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, Users, Monitor, CreditCard, LogOut, Layout, FileText, ShoppingBag } from 'lucide-react'
+import { Home, Users, Monitor, CreditCard, LogOut, Layout, FileText, ShoppingBag, BarChart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -17,6 +17,7 @@ export function TopNav() {
     { href: '/admin/computer-zones', icon: Layout, label: '区域管理' },
     { href: '/admin/recharge', icon: CreditCard, label: '用户充值' },
     { href: '/admin/commodities', icon: ShoppingBag, label: '商品管理' },
+    { href: '/admin/reports', icon: BarChart, label: '销售报表' },
     { href: '/admin/logs', icon: FileText, label: '日志' },
   ]
 
